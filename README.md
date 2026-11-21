@@ -118,6 +118,10 @@ skills/find-skills/
 steering/find-skills-auto.md  optional auto-trigger
 ```
 
+## Releasing
+
+Releases are automatic. Bump `version` in `package.json` and `metadata.version` in `skills/find-skills/SKILL.md` to the same value, then push to `main`. The `Release` workflow checks that both versions match, validates the package, then creates the `vX.Y.Z` tag and a GitHub release with notes generated from the commits. A version with a suffix such as `1.3.0-beta.1` becomes a pre-release. Pushes that do not change `package.json`, or reuse a version that already has a tag, do not create a release.
+
 ## Publishing to npm
 
 ```bash

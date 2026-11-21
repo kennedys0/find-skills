@@ -1,0 +1,67 @@
+# Creates a GitHub release when the version in package.json changes.
+# Bump "version" in package.json and metadata.version in SKILL.md, push to main, done.
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths: [package.json]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Read versions
+        id: version
+        run: |
+          pkg=$(node -p "require('./package.json').version")
+          skill=$(sed -n 's/^  version: "\(.*\)"$/\1/p' skills/find-skills/SKILL.md)
+          echo "package.json: $pkg, SKILL.md: $skill"
+          if [ "$pkg" != "$skill" ]; then
+            echo "::error::package.json ($pkg) and SKILL.md metadata.version ($skill) differ. Bump both."
+            exit 1
+          fi
+          if git rev-parse -q --verify "refs/tags/v$pkg" >/dev/null; then
+            echo "Tag v$pkg already exists; nothing to release."
+            echo "release=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$pkg" >> "$GITHUB_OUTPUT"
+
+      - name: Check the package
+        if: steps.version.outputs.release == 'true'
+        run: |
+          python3 -m py_compile skills/find-skills/scripts/skillfinder.py
+          node --check bin/cli.js
+          for f in skills/find-skills/references/catalog/*.json; do
+            python3 -m json.tool "$f" >/dev/null || { echo "::error file=$f::invalid JSON"; exit 1; }
+          done
+          node bin/cli.js list
+          npm pack --dry-run
+
+      - name: Create release
+        if: steps.version.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          flags="--latest"
+          case "$VERSION" in *-*) flags="--prerelease --latest=false" ;; esac
+          gh release create "v$VERSION" \
+            --target "$GITHUB_SHA" \
+            --title "v$VERSION" \
+            --generate-notes \
+            $flags
