@@ -46,10 +46,11 @@ jobs:
         run: |
           python3 -m py_compile skills/find-skills/scripts/skillfinder.py
           node --check bin/cli.js
-          for f in skills/find-skills/references/catalog/*.json; do
+          for f in skills/find-skills/references/*.json skills/find-skills/references/catalog/*.json; do
             python3 -m json.tool "$f" >/dev/null || { echo "::error file=$f::invalid JSON"; exit 1; }
           done
           node bin/cli.js list
+          node bin/cli.js agents
           npm pack --dry-run
 
       - name: Create release

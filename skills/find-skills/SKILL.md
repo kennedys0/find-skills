@@ -4,7 +4,7 @@ description: Find, vet and install agent skills for the current project, focused
 license: MIT
 compatibility: Python 3.9+ and network access to skills.sh, api.github.com, raw.githubusercontent.com and codeload.github.com. A GitHub token (GITHUB_TOKEN or `gh auth login`) avoids the 60 requests/hour anonymous limit.
 metadata:
-  version: "1.2.0"
+  version: "1.3.0"
 ---
 
 # find-skills
@@ -48,13 +48,13 @@ Every `MISSING` kind must appear in your proposal in step 6, listed first, using
 ### 3. Local skills first
 
 ```bash
-SF local                     # everything installed
+SF local                     # everything installed, across every known agent's folders
 SF local nextjs tailwind     # keyword match against names and descriptions
 ```
 
 If an installed skill covers a domain, use it and do not search for that domain. If a match is weak, read that skill's SKILL.md before deciding it covers the need.
 
-Register every local skill you decide to use, so later sessions keep applying it:
+In Kiro, register every local skill you decide to use, so later sessions keep applying it:
 
 ```bash
 SF use antislop antislop-ui vercel-react-best-practices
@@ -119,13 +119,13 @@ SF install owner/repo skill-name --sha <sha> --scope global     # ~/.kiro/skills
 SF install owner/repo skill-name --sha <sha> --allow-review     # REVIEW verdict, after user OK
 ```
 
-- `--agent claude` or `--agent agents` targets `.claude/skills` or `.agents/skills` instead of `.kiro/skills`.
+- Pass `--agent <id>` for the agent you are running in, so the skill lands where that agent looks: `kiro` (default), `claude`, `codex`, `antigravity`, `gemini`, `opencode`, `pi`, `cursor`, `copilot`, `windsurf` and more. `SF agents` lists every id with its project and global folders. If you cannot tell which agent you are, ask the user.
 - An existing skill with the same name is never replaced silently. `--overwrite` moves the old copy to `skills-backup/` first, and needs the user's OK.
 - Every install is recorded with its commit in `.find-skills-lock.json` inside the skills folder.
 - Use `--force` only when the user has read REJECT findings and explicitly insists.
 - Do not use `npx skills add` or a manual `git clone` here. They skip the pinning and the scan.
 
-`install` also adds the skill to `.kiro/steering/find-skills-active.md` (or `~/.kiro/steering/` for `--scope global`). That steering file loads in every session and tells the agent to apply each listed skill. `SF active` shows the list. `SF unuse NAME` takes a skill off the list when the user no longer wants it applied.
+For Kiro, `install` also adds the skill to `.kiro/steering/find-skills-active.md` (or `~/.kiro/steering/` for `--scope global`). That steering file loads in every session and tells the agent to apply each listed skill. `SF active` shows the list. `SF unuse NAME` takes a skill off the list when the user no longer wants it applied. Other agents discover installed skills from their own skills folder by description; step 8 still applies in full.
 
 ### 8. Use every approved skill (required)
 

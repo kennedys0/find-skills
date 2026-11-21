@@ -43,6 +43,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 CATALOG_DIR = HERE.parent / "references" / "catalog"
+AGENTS_PATH = HERE.parent / "references" / "agents.json"
 STAGING_ROOT = Path(tempfile.gettempdir()) / "find-skills-staging"
 LOCK_NAME = ".find-skills-lock.json"
 UA = "find-skills/1.0 (+agent skill finder)"
@@ -312,17 +313,65 @@ def quality(meta: dict, installs: int | None, trusted: set[str]) -> tuple[int, l
 
 # --------------------------------------------------------------------------- local
 
+_AGENTS: dict | None = None
+
+
+def expand_home(p: str) -> Path:
+    config = os.environ.get("XDG_CONFIG_HOME") or str(Path.home() / ".config")
+    if p.startswith("{config}"):
+        p = config + p[len("{config}"):]
+    return Path(os.path.expanduser(p))
+
+
+def load_agents() -> dict:
+    """Agent registry from references/agents.json: id -> {name, project, global, detect, aliases}."""
+    global _AGENTS
+    if _AGENTS is None:
+        try:
+            _AGENTS = json.loads(AGENTS_PATH.read_text(encoding="utf-8"))["agents"]
+        except (OSError, json.JSONDecodeError, KeyError) as exc:
+            print(f"warning: agent list unavailable ({exc}); using Kiro only", file=sys.stderr)
+            _AGENTS = {"kiro": {"name": "Kiro", "project": ".kiro/skills", "global": "~/.kiro/skills",
+                                "detect": ["~/.kiro"]}}
+    return _AGENTS
+
+
+def agent_id(name: str) -> str:
+    name = name.lower()
+    for aid, a in load_agents().items():
+        if name == aid or name in a.get("aliases", []):
+            return aid
+    die(f"unknown agent '{name}'. Run `agents` for the list.")
+    return ""
+
+
 def local_skill_dirs(cwd: Path) -> list[tuple[str, Path]]:
-    home = Path.home()
-    return [
-        ("workspace/kiro", cwd / ".kiro" / "skills"),
-        ("global/kiro", home / ".kiro" / "skills"),
-        ("workspace/claude", cwd / ".claude" / "skills"),
-        ("global/claude", home / ".claude" / "skills"),
-        ("workspace/agents", cwd / ".agents" / "skills"),
-        ("global/agents", home / ".agents" / "skills"),
-        ("global/codex", home / ".codex" / "skills"),
-    ]
+    """Every project and global skills folder of every known agent, workspace first, no duplicates."""
+    out, seen = [], set()
+    agents = load_agents()
+    for scope in ("workspace", "global"):
+        for aid, a in agents.items():
+            base = cwd / a["project"] if scope == "workspace" else expand_home(a["global"])
+            key = str(base.resolve()) if base.exists() else str(base)
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append((f"{scope}/{aid}", base))
+    legacy = Path.home() / ".codex" / "skills"  # older Codex releases
+    if str(legacy) not in seen:
+        out.append(("global/codex-legacy", legacy))
+    return out
+
+
+def cmd_agents(args) -> None:
+    home = str(Path.home())
+    print(f"{'id':13s} {'agent':28s} {'project folder':18s} global folder")
+    for aid, a in load_agents().items():
+        found = any(expand_home(p).exists() for p in a.get("detect", []))
+        g = str(expand_home(a["global"]))
+        g = "~" + g[len(home):] if g.startswith(home) else g
+        print(f"{aid:13s} {a['name'][:28]:28s} {a['project']:18s} {g}{'  *' if found else ''}")
+    print("\n* found on this machine. Install with: install SRC SKILL --agent <id>")
 
 
 def scan_local(cwd: Path) -> list[dict]:
@@ -842,12 +891,12 @@ def cmd_vet(args) -> None:
 def target_dir(args) -> Path:
     if args.dir:
         return Path(args.dir).expanduser().resolve()
-    agent_dir = {"kiro": ".kiro", "claude": ".claude", "agents": ".agents"}[args.agent]
-    base = Path.home() if args.scope == "global" else Path.cwd()
-    return base / agent_dir / "skills"
+    a = load_agents()[args.agent]
+    return expand_home(a["global"]) if args.scope == "global" else Path.cwd() / a["project"]
 
 
 def cmd_install(args) -> None:
+    args.agent = agent_id(args.agent)
     r = vet(args.source, args.skill, args.sha)
     print_report(r)
     print()
@@ -1077,7 +1126,7 @@ def main() -> None:
     s.add_argument("skill")
     s.add_argument("--sha", help="commit from the vet step; pins exactly what the user approved")
     s.add_argument("--scope", choices=["workspace", "global"], default="workspace")
-    s.add_argument("--agent", choices=["kiro", "claude", "agents"], default="kiro")
+    s.add_argument("--agent", default="kiro", help="agent you are running in (see `agents`), default kiro")
     s.add_argument("--dir", help="explicit skills directory (overrides --scope/--agent)")
     s.add_argument("--overwrite", action="store_true")
     s.add_argument("--allow-review", action="store_true")
@@ -1096,6 +1145,9 @@ def main() -> None:
 
     s = sub.add_parser("active", help="show the active skills the agent must apply")
     s.set_defaults(fn=cmd_active)
+
+    s = sub.add_parser("agents", help="supported agents and their skills folders")
+    s.set_defaults(fn=cmd_agents)
 
     args = p.parse_args()
     try:

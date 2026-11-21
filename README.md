@@ -54,27 +54,53 @@ Requirements: Node 18+ for the installer, Python 3.9+ for the helper the agent r
 npx github:kennedys0/find-skills --website --auto
 ```
 
-This installs the skill globally into `~/.kiro/skills/find-skills` and adds an always-on steering file, so it triggers on every new project. Start a new session or reload the IDE afterwards.
+This installs the skill globally for Kiro into `~/.kiro/skills/find-skills` and adds an always-on steering file, so it triggers on every new project. For other agents, add `--agent` (see [Supported agents](#supported-agents)). Start a new session or reload the IDE afterwards.
 
 More examples:
 
 ```bash
-npx github:kennedys0/find-skills#v1.2.0 --website                    # pin a version
+npx github:kennedys0/find-skills#v1.3.0 --website                    # pin a version
+npx github:kennedys0/find-skills --website --agent codex             # Codex CLI
+npx github:kennedys0/find-skills --website --agent antigravity,opencode,pi
+npx github:kennedys0/find-skills --website --detect                  # every agent found on this machine
 npx github:kennedys0/find-skills --website --workspace               # this project only
-npx github:kennedys0/find-skills --website --agent kiro --agent claude   # Kiro and Claude Code
+npx github:kennedys0/find-skills agents                              # supported agents and folders
 npx github:kennedys0/find-skills list                                # available profiles
-npx github:kennedys0/find-skills uninstall
+npx github:kennedys0/find-skills uninstall --agent codex
 ```
 
 | Option | Meaning |
 |---|---|
 | `--website` | install the website profile |
 | `--all` | every available profile |
-| `--workspace [dir]` | install into `<dir>/.kiro/skills` only; without it, installs globally |
-| `--agent kiro\|claude\|agents` | target agent; repeat for several (default `kiro`) |
+| `--agent <id>` | target agent (default `kiro`); repeat or comma-separate |
+| `--detect` | also install for every agent found on this machine |
+| `--workspace [dir]` | install into the project at `<dir>` only; without it, installs globally |
 | `--only` | replace the installed profiles; by default new profiles are added |
-| `--auto` | add the always-on steering file so the skill triggers on new projects |
+| `--auto` | add the always-on Kiro steering file so the skill triggers on new projects |
 | `--dry-run` | print the plan without changing anything |
+
+### Supported agents
+
+| `--agent` | Agent | Global folder |
+|---|---|---|
+| `kiro` | Kiro IDE and CLI | `~/.kiro/skills` |
+| `claude` | Claude Code | `~/.claude/skills` |
+| `codex` | Codex CLI | `~/.agents/skills` |
+| `antigravity` | Antigravity IDE and CLI (`agy`) | `~/.gemini/config/skills` |
+| `gemini` | Gemini CLI | `~/.gemini/skills` |
+| `opencode` | OpenCode | `~/.config/opencode/skills` |
+| `pi` | Pi | `~/.agents/skills` |
+| `cursor` | Cursor | `~/.cursor/skills` |
+| `copilot` | GitHub Copilot | `~/.copilot/skills` |
+| `windsurf` | Windsurf | `~/.codeium/windsurf/skills` |
+
+Also supported: `cline`, `kimi`, `amp`, `droid`, `goose`, `qwen`, `qoder`, `trae`, `roo`, `kilo`, `junie`, `augment`, `continue`, `crush`, `openhands`, `warp`, `zed`, `hermes`, `vibe`, `devin`, `grok`, and `agents` (the shared `.agents/skills` folder). Run `npx github:kennedys0/find-skills agents` for every folder.
+
+- Agents that share a folder get one copy. Codex, Pi, Cline, Kimi, Warp and Zed all read `~/.agents/skills`.
+- In a project (`--workspace`), most agents read `.agents/skills`. Kiro, Claude Code, Windsurf and a few others use their own folder.
+- The installer never uses `--detect` on its own. It prints which other agents it found so you can add them.
+- `--auto` and the active-skills steering are Kiro features. Other agents find the skill through its description, or when you invoke it by name.
 
 - Run the same command again to update. The previous copy is moved to `skills-backup/`.
 - Use `npx`, not `npm install <pkg> --website`. `npm install` does not pass flags like `--website` to the package.
@@ -119,6 +145,7 @@ skills/find-skills/
     ├── catalog/core.json          anti-slop baseline, trusted owners, clone detection
     ├── catalog/website.json       website profile
     ├── catalog/game.json          game profile (draft)
+    ├── agents.json                supported agents and their skills folders
     └── vetting.md                 manual review checklist
 steering/find-skills-auto.md       optional always-on trigger
 .github/workflows/release.yml      automatic releases
@@ -147,6 +174,16 @@ An entry is accepted when:
 
 The installer creates the `--<name>` flag from the file name, so `bin/cli.js` needs no change.
 
+### Adding an agent
+
+Add an entry to `skills/find-skills/references/agents.json`:
+
+```json
+"myagent": {"name": "My Agent", "project": ".myagent/skills", "global": "~/.myagent/skills", "detect": ["~/.myagent"], "aliases": ["my-agent"]}
+```
+
+`~` is the home folder and `{config}` is `$XDG_CONFIG_HOME` (default `~/.config`). `detect` lists folders that exist only when the agent is installed. Link the agent's documentation for its skills folder in the pull request. The installer and the helper both read this file, so no code change is needed.
+
 ### Before opening a pull request
 
 Run the same checks as the release workflow:
@@ -154,7 +191,7 @@ Run the same checks as the release workflow:
 ```bash
 python3 -m py_compile skills/find-skills/scripts/skillfinder.py
 node --check bin/cli.js
-for f in skills/find-skills/references/catalog/*.json; do python3 -m json.tool "$f" >/dev/null || echo "bad: $f"; done
+for f in skills/find-skills/references/*.json skills/find-skills/references/catalog/*.json; do python3 -m json.tool "$f" >/dev/null || echo "bad: $f"; done
 node bin/cli.js list
 ```
 
