@@ -1,6 +1,6 @@
 {
   "name": "find-skills",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Skill finder for Kiro and other Agent Skills tools: finds, vets and installs skills for your project, with anti-slop built in.",
   "bin": {
     "find-skills": "bin/cli.js"

@@ -102,7 +102,28 @@ Also supported: `cline`, `kimi`, `amp`, `droid`, `goose`, `qwen`, `qoder`, `trae
 - The installer never uses `--detect` on its own. It prints which other agents it found so you can add them.
 - `--auto` and the active-skills steering are Kiro features. Other agents find the skill through its description, or when you invoke it by name.
 
-- Run the same command again to update. The previous copy is moved to `skills-backup/`.
+### The `find-skills` command
+
+Install the command once to manage the skill from any terminal:
+
+```bash
+npm install -g github:kennedys0/find-skills
+```
+
+| Command | What it does |
+|---|---|
+| `find-skills --website --auto` | install the skill (same options as above) |
+| `find-skills --version` | version of the command, the latest release, and every installed copy per agent |
+| `find-skills update` | update the command to the latest release, then every installed copy, keeping their profiles |
+| `find-skills update --force` | reinstall every copy even when it is already current |
+| `find-skills agents` | supported agents and their folders (`*` = found on this machine) |
+| `find-skills list` | profiles |
+| `find-skills uninstall --agent codex` | remove the skill for an agent |
+| `npm uninstall -g find-skills` | remove the command |
+
+The command is `find-skills` with a hyphen. Typed as `find skills`, the terminal runs the system `find` tool. Every command also works without a global install: `npx github:kennedys0/find-skills update`.
+
+- `update` checks for new copies in every agent's global folder and in the current project. Old copies are moved to `skills-backup/`.
 - Use `npx`, not `npm install <pkg> --website`. `npm install` does not pass flags like `--website` to the package.
 - Without `--auto`, the skill still activates when a request matches its description ("build a website", "find a skill for auth"), or when you type `/find-skills`.
 - Without npm: in Kiro IDE open **Agent Steering & Skills → + → Import skill from a repository URL** and paste `https://github.com/kennedys0/find-skills/tree/main/skills/find-skills`. This copies every profile and skips the `--auto` steering file.
