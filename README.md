@@ -1,70 +1,22 @@
 # find-skills
 
-A skill finder for Kiro and other agents that use the Agent Skills format (`SKILL.md`). It currently focuses on **websites and web apps**. More profiles, such as games, are planned.
+A skill finder for Kiro and other agents that use the Agent Skills format (`SKILL.md`). When you start a project, it finds the best skills for it, checks that they are good and safe, asks before installing, and makes sure the agent actually uses them.
 
-When you start a project, the agent:
+It currently focuses on **websites and web apps**. More profiles, such as games, are planned.
 
-1. Checks whether **anti-slop** skills for UI, code and writing are installed. Any that are missing go to the top of its proposal.
-2. Looks for matching skills that are already installed (`.kiro/skills`, `~/.kiro/skills`, `.claude/skills`, `~/.agents/skills` and others).
-3. Fills the gaps from a curated catalog, then from skills.sh and GitHub, ranked by stars, installs, license and recent activity.
-4. Downloads each candidate to a staging folder, scans every file, and reads the skill itself.
-5. Asks you first, for example: *"May I install these skills for anti-slop?"* It replies in your language.
-6. Installs only what you approve, pinned to the commit it reviewed.
-7. Uses every approved skill. It reads them right away, maps each one to part of the task, applies them while working, and reports per skill before delivery what it did or why the skill did not apply.
+## What it does
 
-## Approved skills stay in use
+When you start a project, or the work moves into a new area, the agent:
 
-Approved skills, whether newly installed or already local, are listed in `.kiro/steering/find-skills-active.md`, or `~/.kiro/steering/` for global installs. That steering file uses `inclusion: always`, so every later session is told to read and apply them without asking again.
+1. **Checks the anti-slop baseline.** Skills that stop generic AI-looking UI, code and writing are always proposed first if they are missing.
+2. **Looks at local skills first.** It searches `.kiro/skills`, `~/.kiro/skills`, `.claude/skills`, `~/.agents/skills` and others before going online.
+3. **Searches for the gaps.** It uses a curated catalog, then skills.sh and GitHub, ranked by stars, installs, license and recent activity.
+4. **Vets every candidate.** It downloads the skill to a staging folder at one commit, scans every file, and reads the skill itself before recommending it.
+5. **Asks you.** For example: *"May I install these skills for anti-slop?"* It replies in your language and installs nothing without a clear yes.
+6. **Installs what you approve,** pinned to the exact commit it reviewed.
+7. **Uses every approved skill.** It reads them right away, maps each one to part of the task, applies them while working, and before delivery reports per skill what it did or why the skill did not apply.
 
-```bash
-SF="python3 ~/.kiro/skills/find-skills/scripts/skillfinder.py"
-$SF active                      # show the list
-$SF use antislop antislop-ui    # add skills that were already installed
-$SF unuse stop-slop             # stop applying a skill (it stays installed)
-```
-
-## Install
-
-From GitHub:
-
-```bash
-npx github:kennedys0/find-skills --website --auto          # global + auto-trigger on new projects (recommended)
-npx github:kennedys0/find-skills#v1.2.0 --website          # pin a specific version
-npm install -g github:kennedys0/find-skills && find-skills --website
-```
-
-Once the package is published to npm, the shorter form works too:
-
-```bash
-npx find-skills --website --auto
-npx find-skills --website --workspace                      # this project only
-npx find-skills --website --agent kiro --agent claude      # Kiro + Claude Code
-npx find-skills list                                       # show available profiles
-npx find-skills uninstall
-```
-
-Use `npx` rather than `npm install <pkg> --website`: `npm install` does not pass flags like `--website` to the package.
-
-Without npm: in Kiro IDE open **Agent Steering & Skills → + → Import skill from a repository URL** and paste `https://github.com/kennedys0/find-skills/tree/main/skills/find-skills`. This copies every profile and does not install the `--auto` steering file.
-
-| Option | Meaning |
-|---|---|
-| `--website` | website profile: ui-ux, frontend, performance-a11y, backend, security, testing, seo-marketing, deploy, workflow |
-| `--game` | *coming soon*, cannot be installed yet |
-| `--all` | every stable profile |
-| `--workspace [dir]` | install into `<dir>/.kiro/skills` only; without it, installs globally into `~/.kiro/skills` |
-| `--agent kiro\|claude\|agents` | target agent; repeat for several (default `kiro`) |
-| `--only` | replace the installed profiles; by default new profiles are **added** to existing ones |
-| `--auto` | add the `find-skills-auto.md` steering file (`always` mode) so it triggers on every new project |
-| `--dry-run` | print the plan without changing anything |
-
-Running the installer again without a profile updates the skill and keeps the same profiles. The previous copy is moved to `skills-backup/`.
-
-Without `--auto`, the skill still activates when your request matches its description ("build a website", "landing page", "find a skill for auth"), and you can call it directly with `/find-skills`.
-
-**Requirements:** Node 18+ for the installer, Python 3.9+ for the helper script the agent runs, and network access. Run `gh auth login` or set `GITHUB_TOKEN` to avoid GitHub's 60 requests/hour anonymous limit.
-
-## Anti-slop (always proposed)
+### Anti-slop baseline
 
 | Kind | Primary | Alternatives |
 |---|---|---|
@@ -72,60 +24,144 @@ Without `--auto`, the skill still activates when your request matches its descri
 | Code | `cursor/plugins` → `deslop` | `antislop-code` |
 | Writing | `blader/humanizer` → `humanizer` | `hardikpandya/stop-slop`, `antislop-copywriting` |
 
-All of these passed `vet` on 2026-11-21. `taste-skill` gets REVIEW because it is large (about 37 MB) and runs headless Chrome locally.
+### Profiles
 
-## Using the helper directly
+| Profile | Status | Domains |
+|---|---|---|
+| `website` | available | ui-ux, frontend, performance-a11y, backend, security, testing, seo-marketing, deploy, workflow |
+| `game` | coming soon | game-godot, game-unity, game-design, art-3d-character |
+
+Topics outside the installed profiles are still searched on skills.sh and GitHub, without a curated list behind them.
+
+### Safety checks
+
+- **Quality score (0–100):** stars, installs, last push, license, and trusted owners such as official vendors. Forks, archived repos and clone patterns lose points.
+- **Clone detection:** many clone repos have a few dozen stars but tens of thousands of reported installs (for example `101-skills/superpowers`: 31 stars, 67k installs). These are rejected automatically.
+- **Static scan:** `curl | sh`, reads of `~/.ssh` and other credentials, tokens sent over the network, prompt injection, hidden Unicode, bundled binaries, `rm -rf /`, dynamic exec, and network calls in scripts.
+- **Verdicts:** `PASS`; `REVIEW` (the agent explains the flags and you decide); `REJECT` (never installed unless you insist).
+
+The scan matches patterns, so the agent must still read the SKILL.md and every script itself.
+
+### Approved skills stay in use
+
+Every approved skill is listed in `.kiro/steering/find-skills-active.md` (or `~/.kiro/steering/` for global installs). That steering file uses `inclusion: always`, so every later session is told to read and apply the listed skills without asking again.
+
+## Install
+
+Requirements: Node 18+ for the installer, Python 3.9+ for the helper the agent runs, and network access. Run `gh auth login` or set `GITHUB_TOKEN` to avoid GitHub's limit of 60 requests per hour.
 
 ```bash
-SF="python3 ~/.kiro/skills/find-skills/scripts/skillfinder.py"
-$SF baseline
-$SF local nextjs
-$SF catalog security
-$SF search "supabase auth"
-$SF vet vercel-labs/agent-skills vercel-react-best-practices
-$SF install vercel-labs/agent-skills vercel-react-best-practices --sha <sha from vet>
+npx github:kennedys0/find-skills --website --auto
 ```
 
-## How quality and safety are judged
+This installs the skill globally into `~/.kiro/skills/find-skills` and adds an always-on steering file, so it triggers on every new project. Start a new session or reload the IDE afterwards.
 
-- **Quality score (0–100):** stars, installs, last push, license and trusted owners (official vendors). Forks, archived repos and clone patterns lose points.
-- **Clone detection:** many clone repos have a few dozen stars but tens of thousands of reported installs (for example `101-skills/superpowers`: 31 stars, 67k installs). These are rejected automatically.
-- **Static scan:** `curl | sh`, access to `~/.ssh` and other credentials, tokens sent over the network, prompt injection, hidden Unicode, bundled binaries, `rm -rf /`, dynamic exec, and network calls in scripts.
-- **Verdicts:** `PASS`; `REVIEW` (must be read and approved); `REJECT` (never installed unless you insist with `--force`).
-- The scan matches patterns, so the agent must still read the SKILL.md and every script before recommending a skill.
+More examples:
 
-## Adding a profile
+```bash
+npx github:kennedys0/find-skills#v1.2.0 --website                    # pin a version
+npx github:kennedys0/find-skills --website --workspace               # this project only
+npx github:kennedys0/find-skills --website --agent kiro --agent claude   # Kiro and Claude Code
+npx github:kennedys0/find-skills list                                # available profiles
+npx github:kennedys0/find-skills uninstall
+```
+
+| Option | Meaning |
+|---|---|
+| `--website` | install the website profile |
+| `--all` | every available profile |
+| `--workspace [dir]` | install into `<dir>/.kiro/skills` only; without it, installs globally |
+| `--agent kiro\|claude\|agents` | target agent; repeat for several (default `kiro`) |
+| `--only` | replace the installed profiles; by default new profiles are added |
+| `--auto` | add the always-on steering file so the skill triggers on new projects |
+| `--dry-run` | print the plan without changing anything |
+
+- Run the same command again to update. The previous copy is moved to `skills-backup/`.
+- Use `npx`, not `npm install <pkg> --website`. `npm install` does not pass flags like `--website` to the package.
+- Without `--auto`, the skill still activates when a request matches its description ("build a website", "find a skill for auth"), or when you type `/find-skills`.
+- Without npm: in Kiro IDE open **Agent Steering & Skills → + → Import skill from a repository URL** and paste `https://github.com/kennedys0/find-skills/tree/main/skills/find-skills`. This copies every profile and skips the `--auto` steering file.
+
+## Contributing
+
+Contributions are welcome. The most useful ones are:
+- **Better catalog entries:** a skill that beats one already listed, or a wrong or outdated entry.
+- **New profiles:** for example finishing `game`, or adding `mobile`.
+- **Better safety rules:** a scan rule that misses something, or one that raises false alarms.
+- **Bug reports.**
+
+For a quick suggestion, [open an issue](https://github.com/kennedys0/find-skills/issues) with the repo link and why it is better.
+
+### Setup
+
+```bash
+git clone https://github.com/kennedys0/find-skills.git
+cd find-skills
+SF="python3 skills/find-skills/scripts/skillfinder.py"
+
+$SF catalog                              # domains in the profiles
+FIND_SKILLS_DRAFTS=1 $SF catalog         # include draft profiles
+$SF search "astro"                       # ranked search
+$SF list owner/repo                      # skills inside a repo
+$SF vet owner/repo skill-name            # scan and score one skill
+node bin/cli.js --website --workspace /tmp/try --dry-run   # try the installer
+```
+
+The helper uses only the Python standard library and the installer has no npm dependencies. Please keep it that way.
+
+### Project layout
+
+```
+bin/cli.js                         npx installer
+skills/find-skills/
+├── SKILL.md                       workflow the agent follows
+├── scripts/skillfinder.py         helper: local, baseline, catalog, search, list, vet, install, use, unuse, active
+└── references/
+    ├── catalog/core.json          anti-slop baseline, trusted owners, clone detection
+    ├── catalog/website.json       website profile
+    ├── catalog/game.json          game profile (draft)
+    └── vetting.md                 manual review checklist
+steering/find-skills-auto.md       optional always-on trigger
+.github/workflows/release.yml      automatic releases
+```
+
+### Adding a catalog entry
+
+Each entry in a profile's `domains` looks like this:
+
+```json
+{"source": "owner/repo", "skills": ["skill-name"], "why": "One sentence with facts: owner, stars, license, what it covers."}
+```
+
+An entry is accepted when:
+1. `$SF list owner/repo` shows every skill name you listed.
+2. `$SF vet owner/repo skill-name` gives `PASS`, or gives `REVIEW` and your PR explains every flag.
+3. You have read the SKILL.md and its scripts, and the instructions are current for the stack.
+4. It is the original repo, not a copy or clone. Prefer the official vendor of the tool when one exists.
+5. The `why` field states facts, not praise.
+
+### Adding a profile
 
 1. Create `skills/find-skills/references/catalog/<name>.json` in the same shape as `website.json`: `profile`, `title`, `status`, `baseline_kinds`, `detect`, `domains`.
-2. While it is unfinished, set `"status": "draft"`. The installer refuses it ("coming soon") and the helper ignores it unless `FIND_SKILLS_DRAFTS=1`.
-3. Confirm every skill in the catalog exists in its repo and passes `vet`, then set `"status": "stable"` and bump the version in `package.json`.
+2. Keep `"status": "draft"` while you work. The installer refuses draft profiles and the helper ignores them unless `FIND_SKILLS_DRAFTS=1`.
+3. Once every entry meets the rules above, set `"status": "stable"`.
 
-The `--<name>` flag comes from the file name, so `bin/cli.js` needs no changes. `game.json` is already there as a draft.
+The installer creates the `--<name>` flag from the file name, so `bin/cli.js` needs no change.
 
-## Layout
+### Before opening a pull request
 
-```
-bin/cli.js                    npx installer (no dependencies)
-skills/find-skills/
-├── SKILL.md                  workflow the agent follows
-├── scripts/skillfinder.py    helper (standard library only)
-└── references/
-    ├── catalog/
-    │   ├── core.json         anti-slop baseline, trusted owners, clone detection
-    │   ├── website.json      website profile (stable)
-    │   └── game.json         game profile (draft)
-    └── vetting.md            manual review checklist
-steering/find-skills-auto.md  optional auto-trigger
-```
-
-## Releasing
-
-Releases are automatic. Bump `version` in `package.json` and `metadata.version` in `skills/find-skills/SKILL.md` to the same value, then push to `main`. The `Release` workflow checks that both versions match, validates the package, then creates the `vX.Y.Z` tag and a GitHub release with notes generated from the commits. A version with a suffix such as `1.3.0-beta.1` becomes a pre-release. Pushes that do not change `package.json`, or reuse a version that already has a tag, do not create a release.
-
-## Publishing to npm
+Run the same checks as the release workflow:
 
 ```bash
-npm login
-npm publish --dry-run   # check the package contents first
-npm publish
+python3 -m py_compile skills/find-skills/scripts/skillfinder.py
+node --check bin/cli.js
+for f in skills/find-skills/references/catalog/*.json; do python3 -m json.tool "$f" >/dev/null || echo "bad: $f"; done
+node bin/cli.js list
 ```
+
+- Keep each pull request to one topic.
+- Do not bump the version; the maintainer does that when releasing.
+- Contributions are released under the project's MIT license.
+
+### Releasing (maintainers)
+
+Bump `version` in `package.json` and `metadata.version` in `skills/find-skills/SKILL.md` to the same value, then push to `main`. The release workflow checks the versions and the package, then creates the `vX.Y.Z` tag and a GitHub release with notes generated from the commits. A version such as `1.3.0-beta.1` becomes a pre-release.
