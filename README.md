@@ -1,67 +1,68 @@
 # find-skills
 
-Skill finder untuk Kiro (dan agent lain yang pakai format Agent Skills / `SKILL.md`). Saat ini fokus ke **website dan web app**. Profil lain (game, dll.) menyusul.
+A skill finder for Kiro and other agents that use the Agent Skills format (`SKILL.md`). It currently focuses on **websites and web apps**. More profiles, such as games, are planned.
 
-Saat kamu mulai project, agent akan:
+When you start a project, the agent:
 
-1. Cek apakah skill **anti-slop** (UI, kode, tulisan) sudah ada. Kalau belum, ini selalu ditawarkan paling atas.
-2. Cari skill yang sudah terpasang di lokal (`.kiro/skills`, `~/.kiro/skills`, `.claude/skills`, `~/.agents/skills`, dll).
-3. Kalau masih kurang, cari di katalog kurasi lalu di skills.sh dan GitHub, diurutkan berdasarkan stars, jumlah install, lisensi, dan seberapa aktif repo-nya.
-4. Download kandidat ke folder staging, scan semua filenya, lalu agent membaca isinya sendiri.
-5. Tanya kamu dulu, misalnya: *"Bolehkah saya install skill ini untuk anti-slop?"*
-6. Install hanya yang kamu setujui, dikunci ke commit yang sudah dicek.
+1. Checks whether **anti-slop** skills for UI, code and writing are installed. Any that are missing go to the top of its proposal.
+2. Looks for matching skills that are already installed (`.kiro/skills`, `~/.kiro/skills`, `.claude/skills`, `~/.agents/skills` and others).
+3. Fills the gaps from a curated catalog, then from skills.sh and GitHub, ranked by stars, installs, license and recent activity.
+4. Downloads each candidate to a staging folder, scans every file, and reads the skill itself.
+5. Asks you first, for example: *"May I install these skills for anti-slop?"* It replies in your language.
+6. Installs only what you approve, pinned to the commit it reviewed.
 
 ## Install
 
-```bash
-npx find-skills --website --auto     # global + trigger otomatis tiap project baru (disarankan)
-npx find-skills --website            # global saja
-npx find-skills --website --workspace          # hanya project di folder ini
-npx find-skills --website --agent kiro --agent claude   # Kiro + Claude Code
-npx find-skills list                 # lihat profil yang tersedia
-npx find-skills uninstall            # hapus lagi
-```
-
-Pakai `npx`, bukan `npm install`: `npm install` tidak meneruskan flag seperti `--website` ke paketnya.
-
-Langsung dari GitHub (tanpa registry npm):
+From GitHub:
 
 ```bash
-npx github:kennedys0/find-skills --website --auto
-npx github:kennedys0/find-skills#v1.1.0 --website    # kunci ke versi tertentu
+npx github:kennedys0/find-skills --website --auto          # global + auto-trigger on new projects (recommended)
+npx github:kennedys0/find-skills#v1.1.0 --website          # pin a specific version
 npm install -g github:kennedys0/find-skills && find-skills --website
 ```
 
-Atau tanpa npm: di Kiro IDE buka **Agent Steering & Skills → + → Import skill from a repository URL**, lalu tempel `https://github.com/kennedys0/find-skills/tree/main/skills/find-skills`. Cara ini menyalin semua profil dan tidak memasang steering `--auto`.
+Once the package is published to npm, the shorter form works too:
 
-| Opsi | Arti |
+```bash
+npx find-skills --website --auto
+npx find-skills --website --workspace                      # this project only
+npx find-skills --website --agent kiro --agent claude      # Kiro + Claude Code
+npx find-skills list                                       # show available profiles
+npx find-skills uninstall
+```
+
+Use `npx` rather than `npm install <pkg> --website`: `npm install` does not pass flags like `--website` to the package.
+
+Without npm: in Kiro IDE open **Agent Steering & Skills → + → Import skill from a repository URL** and paste `https://github.com/kennedys0/find-skills/tree/main/skills/find-skills`. This copies every profile and does not install the `--auto` steering file.
+
+| Option | Meaning |
 |---|---|
-| `--website` | profil website (ui-ux, frontend, performance-a11y, backend, security, testing, seo-marketing, deploy, workflow) |
-| `--game` | *coming soon*, belum bisa di-install |
-| `--all` | semua profil yang sudah stabil |
-| `--workspace [dir]` | install ke `<dir>/.kiro/skills` saja; tanpa ini install global ke `~/.kiro/skills` |
-| `--agent kiro\|claude\|agents` | target agent, boleh lebih dari satu (default `kiro`) |
-| `--only` | ganti profil yang terpasang; default-nya profil baru **ditambahkan** ke yang lama |
-| `--auto` | pasang steering `find-skills-auto.md` (mode `always`) supaya selalu terpicu di project baru |
-| `--dry-run` | tampilkan rencana tanpa mengubah apa pun |
+| `--website` | website profile: ui-ux, frontend, performance-a11y, backend, security, testing, seo-marketing, deploy, workflow |
+| `--game` | *coming soon*, cannot be installed yet |
+| `--all` | every stable profile |
+| `--workspace [dir]` | install into `<dir>/.kiro/skills` only; without it, installs globally into `~/.kiro/skills` |
+| `--agent kiro\|claude\|agents` | target agent; repeat for several (default `kiro`) |
+| `--only` | replace the installed profiles; by default new profiles are **added** to existing ones |
+| `--auto` | add the `find-skills-auto.md` steering file (`always` mode) so it triggers on every new project |
+| `--dry-run` | print the plan without changing anything |
 
-Menjalankan ulang `npx find-skills` tanpa profil akan meng-update skill dengan profil yang sama. Versi lama dipindah ke `skills-backup/`.
+Running the installer again without a profile updates the skill and keeps the same profiles. The previous copy is moved to `skills-backup/`.
 
-Tanpa `--auto`, skill tetap aktif kalau permintaanmu cocok dengan deskripsinya ("bikin website", "landing page", "cari skill untuk auth"), atau bisa dipanggil manual dengan `/find-skills`.
+Without `--auto`, the skill still activates when your request matches its description ("build a website", "landing page", "find a skill for auth"), and you can call it directly with `/find-skills`.
 
-**Kebutuhan:** Node 18+ (untuk installer), Python 3.9+ (untuk helper yang dipakai agent), dan koneksi internet. Login `gh auth login` atau set `GITHUB_TOKEN` supaya tidak kena limit 60 request/jam dari GitHub.
+**Requirements:** Node 18+ for the installer, Python 3.9+ for the helper script the agent runs, and network access. Run `gh auth login` or set `GITHUB_TOKEN` to avoid GitHub's 60 requests/hour anonymous limit.
 
-## Anti-slop (wajib ditawarkan)
+## Anti-slop (always proposed)
 
-| Jenis | Rekomendasi utama | Alternatif |
+| Kind | Primary | Alternatives |
 |---|---|---|
 | UI | `miqdadbadjuber/anti-slop` → `antislop`, `antislop-ui`, `antislop-layoutmobile` | `leonxlnx/taste-skill` → `design-taste-frontend` |
-| Kode | `cursor/plugins` → `deslop` | `antislop-code` |
-| Tulisan | `blader/humanizer` → `humanizer` | `hardikpandya/stop-slop`, `antislop-copywriting` |
+| Code | `cursor/plugins` → `deslop` | `antislop-code` |
+| Writing | `blader/humanizer` → `humanizer` | `hardikpandya/stop-slop`, `antislop-copywriting` |
 
-Semua sudah lolos `vet` per 2026-11-21. `taste-skill` dapat REVIEW karena besar (sekitar 37 MB) dan menjalankan headless Chrome secara lokal.
+All of these passed `vet` on 2026-11-21. `taste-skill` gets REVIEW because it is large (about 37 MB) and runs headless Chrome locally.
 
-## Pakai helper secara manual
+## Using the helper directly
 
 ```bash
 SF="python3 ~/.kiro/skills/find-skills/scripts/skillfinder.py"
@@ -70,47 +71,45 @@ $SF local nextjs
 $SF catalog security
 $SF search "supabase auth"
 $SF vet vercel-labs/agent-skills vercel-react-best-practices
-$SF install vercel-labs/agent-skills vercel-react-best-practices --sha <sha dari vet>
+$SF install vercel-labs/agent-skills vercel-react-best-practices --sha <sha from vet>
 ```
 
-## Cara menilai kualitas dan keamanan
+## How quality and safety are judged
 
-- **Skor kualitas (0–100):** stars, jumlah install, push terakhir, lisensi, pemilik terpercaya (vendor resmi). Dikurangi untuk fork, repo arsip, dan pola clone.
-- **Deteksi clone:** banyak repo clone ber-star belasan tapi "install"-nya puluhan ribu (contoh: `101-skills/superpowers`, 31 stars, 67 ribu install). Ini otomatis REJECT.
-- **Scan statis:** `curl | sh`, akses `~/.ssh` / kredensial, kirim token lewat network, prompt injection, Unicode tersembunyi, binary, `rm -rf /`, exec dinamis, network di script.
-- **Verdict:** `PASS`, `REVIEW` (perlu dibaca dan disetujui), `REJECT` (tidak di-install kecuali kamu memaksa dengan `--force`).
-- Scan itu pencocokan pola, jadi agent tetap wajib membaca SKILL.md dan semua script sebelum merekomendasikan.
+- **Quality score (0–100):** stars, installs, last push, license and trusted owners (official vendors). Forks, archived repos and clone patterns lose points.
+- **Clone detection:** many clone repos have a few dozen stars but tens of thousands of reported installs (for example `101-skills/superpowers`: 31 stars, 67k installs). These are rejected automatically.
+- **Static scan:** `curl | sh`, access to `~/.ssh` and other credentials, tokens sent over the network, prompt injection, hidden Unicode, bundled binaries, `rm -rf /`, dynamic exec, and network calls in scripts.
+- **Verdicts:** `PASS`; `REVIEW` (must be read and approved); `REJECT` (never installed unless you insist with `--force`).
+- The scan matches patterns, so the agent must still read the SKILL.md and every script before recommending a skill.
 
-## Menambah profil baru (untuk update berikutnya)
+## Adding a profile
 
-1. Buat `skills/find-skills/references/catalog/<nama>.json` dengan format yang sama seperti `website.json`: `profile`, `title`, `status`, `baseline_kinds`, `detect`, `domains`.
-2. Selama belum siap, isi `"status": "draft"`. Installer akan menolaknya ("coming soon"), dan helper mengabaikannya kecuali `FIND_SKILLS_DRAFTS=1`.
-3. Pastikan semua skill di katalog benar-benar ada di repo-nya dan lolos `vet`, lalu ubah ke `"status": "stable"` dan naikkan versi di `package.json`.
+1. Create `skills/find-skills/references/catalog/<name>.json` in the same shape as `website.json`: `profile`, `title`, `status`, `baseline_kinds`, `detect`, `domains`.
+2. While it is unfinished, set `"status": "draft"`. The installer refuses it ("coming soon") and the helper ignores it unless `FIND_SKILLS_DRAFTS=1`.
+3. Confirm every skill in the catalog exists in its repo and passes `vet`, then set `"status": "stable"` and bump the version in `package.json`.
 
-Flag `--<nama>` otomatis muncul dari nama file, jadi `bin/cli.js` tidak perlu diubah. `game.json` sudah ada sebagai draft.
+The `--<name>` flag comes from the file name, so `bin/cli.js` needs no changes. `game.json` is already there as a draft.
 
-## Struktur
+## Layout
 
 ```
-bin/cli.js                    installer npx (tanpa dependency)
+bin/cli.js                    npx installer (no dependencies)
 skills/find-skills/
-├── SKILL.md                  alur kerja untuk agent
-├── scripts/skillfinder.py    helper (stdlib saja)
+├── SKILL.md                  workflow the agent follows
+├── scripts/skillfinder.py    helper (standard library only)
 └── references/
     ├── catalog/
-    │   ├── core.json         baseline anti-slop, owner terpercaya, deteksi clone
-    │   ├── website.json      profil website (stable)
-    │   └── game.json         profil game (draft)
-    └── vetting.md            checklist review manual
-steering/find-skills-auto.md  trigger otomatis (opsional)
+    │   ├── core.json         anti-slop baseline, trusted owners, clone detection
+    │   ├── website.json      website profile (stable)
+    │   └── game.json         game profile (draft)
+    └── vetting.md            manual review checklist
+steering/find-skills-auto.md  optional auto-trigger
 ```
 
-## Publish ke npm
-
-Nama `find-skills` masih kosong di npm per 2026-11-21.
+## Publishing to npm
 
 ```bash
 npm login
-npm publish --dry-run   # cek isi paket dulu
+npm publish --dry-run   # check the package contents first
 npm publish
 ```
