@@ -1,0 +1,102 @@
+{
+  "profile": "website",
+  "title": "Websites and web apps",
+  "status": "stable",
+  "checked_on": "2026-11-21",
+  "baseline_kinds": ["ui", "code", "writing"],
+  "detect": ["package.json", "index.html", "next.config.*", "vite.config.*", "astro.config.*", "nuxt.config.*", "svelte.config.*", "remix.config.*", "tailwind.config.*", "composer.json", "manage.py", "Gemfile"],
+  "domains": {
+    "ui-ux": {
+      "title": "UI/UX and visual design",
+      "keywords": ["ui", "ux", "design", "interface", "layout", "landing", "visual", "typography", "color", "dashboard", "website", "animation", "motion"],
+      "entries": [
+        {"source": "anthropics/skills", "skills": ["frontend-design"], "why": "Anthropic's official design skill, 1.1M installs."},
+        {"source": "vercel-labs/agent-skills", "skills": ["web-design-guidelines"], "why": "Vercel's 100+ rule UI audit (a11y, perf, UX), 889k installs."},
+        {"source": "nextlevelbuilder/ui-ux-pro-max-skill", "skills": ["ui-ux-pro-max"], "why": "Design-system generator with style/palette/font database, 152k stars."},
+        {"source": "pbakaus/impeccable", "skills": ["impeccable"], "why": "Design, critique, audit and polish commands for frontends, 114k stars."},
+        {"source": "emilkowalski/skills", "skills": ["review-animations"], "why": "Motion and animation review by the Sonner/Vaul author, 58k stars."},
+        {"source": "google-labs-code/stitch-skills", "skills": ["taste-design"], "why": "Google Labs Stitch design skills."}
+      ]
+    },
+    "frontend": {
+      "title": "Frontend engineering (React, Next.js, Tailwind, components)",
+      "keywords": ["frontend", "react", "nextjs", "next", "tailwind", "css", "vue", "svelte", "astro", "javascript", "typescript", "components", "shadcn"],
+      "entries": [
+        {"source": "vercel-labs/agent-skills", "skills": ["vercel-react-best-practices", "vercel-composition-patterns", "vercel-react-view-transitions"], "why": "Vercel's React/Next.js rules, 920k installs."},
+        {"source": "shadcn-ui/ui", "skills": ["shadcn"], "why": "Official shadcn/ui skill."},
+        {"source": "wshobson/agents", "skills": ["tailwind-design-system", "nextjs-app-router-patterns"], "why": "Large MIT collection, 42k stars."},
+        {"source": "addyosmani/agent-skills", "skills": ["frontend-ui-engineering"], "why": "Frontend engineering practices by Addy Osmani, 119k stars."}
+      ]
+    },
+    "performance-a11y": {
+      "title": "Performance, Core Web Vitals and accessibility",
+      "keywords": ["performance", "speed", "lighthouse", "vitals", "lcp", "cls", "inp", "accessibility", "a11y", "wcag", "aria", "fast"],
+      "entries": [
+        {"source": "addyosmani/web-quality-skills", "skills": ["web-quality-audit", "performance", "core-web-vitals", "accessibility", "best-practices"], "why": "Lighthouse-style web quality checks by Addy Osmani."},
+        {"source": "ibelick/ui-skills", "skills": ["fixing-accessibility"], "why": "Focused a11y fixes, 11k stars."},
+        {"source": "cloudflare/skills", "skills": ["web-perf"], "why": "Official Cloudflare web performance skill."}
+      ]
+    },
+    "backend": {
+      "title": "Backend, APIs and databases",
+      "keywords": ["backend", "api", "server", "database", "postgres", "sql", "node", "fastify", "express", "payments", "stripe", "supabase", "prisma", "serverless", "rest", "graphql"],
+      "entries": [
+        {"source": "supabase/agent-skills", "skills": ["supabase-postgres-best-practices"], "why": "Official Supabase Postgres rules, 494k installs."},
+        {"source": "addyosmani/agent-skills", "skills": ["api-and-interface-design"], "why": "API design guidance, 119k stars."},
+        {"source": "wshobson/agents", "skills": ["nodejs-backend-patterns"], "why": "Node backend patterns."},
+        {"source": "mcollina/skills", "skills": ["fastify-best-practices"], "why": "By Node.js TSC member Matteo Collina."},
+        {"source": "stripe/ai", "skills": ["stripe-best-practices"], "why": "Official Stripe integration rules."},
+        {"source": "neondatabase/agent-skills", "skills": ["neon-postgres"], "why": "Official Neon serverless Postgres."}
+      ]
+    },
+    "security": {
+      "title": "Security (web app hardening, audits, auth)",
+      "keywords": ["security", "secure", "owasp", "vulnerability", "audit", "pentest", "auth", "login", "xss", "csrf", "injection", "hardening", "secrets"],
+      "entries": [
+        {"source": "trailofbits/skills", "skills": ["differential-review", "sharp-edges", "fp-check"], "why": "Trail of Bits security research firm. CC-BY-SA-4.0. Run `list` for the full set."},
+        {"source": "addyosmani/agent-skills", "skills": ["security-and-hardening"], "why": "General web hardening checklist."},
+        {"source": "usestrix/strix", "skills": ["owasp-top-10-testing"], "why": "OWASP Top 10 testing from an AI pentest project, 77k stars. Only test targets you own."},
+        {"source": "better-auth/skills", "skills": ["better-auth-security-best-practices"], "why": "Official Better Auth security rules."},
+        {"source": "firebase/agent-skills", "skills": ["firebase-security-rules-auditor"], "why": "Official Firebase rules auditor."}
+      ]
+    },
+    "testing": {
+      "title": "Testing (unit, end-to-end, browser)",
+      "keywords": ["test", "testing", "e2e", "playwright", "cypress", "vitest", "jest", "tdd", "browser", "qa"],
+      "entries": [
+        {"source": "anthropics/skills", "skills": ["webapp-testing"], "why": "Official Playwright-based local web app testing."},
+        {"source": "microsoft/playwright-cli", "skills": ["playwright-cli"], "why": "Microsoft's Playwright CLI skill, 15k stars."},
+        {"source": "wshobson/agents", "skills": ["e2e-testing-patterns"], "why": "End-to-end testing patterns."},
+        {"source": "addyosmani/agent-skills", "skills": ["browser-testing-with-devtools"], "why": "Debug and test in the browser via DevTools."},
+        {"source": "obra/superpowers", "skills": ["test-driven-development"], "why": "TDD workflow from the original Superpowers repo."}
+      ]
+    },
+    "seo-marketing": {
+      "title": "SEO, copywriting and growth",
+      "keywords": ["seo", "marketing", "copywriting", "conversion", "cro", "landing", "analytics", "growth", "content", "meta", "sitemap"],
+      "entries": [
+        {"source": "coreyhaines31/marketingskills", "skills": ["seo-audit", "ai-seo", "copywriting"], "why": "Marketing skill pack, 61.8k stars, MIT."},
+        {"source": "addyosmani/web-quality-skills", "skills": ["seo"], "why": "Technical SEO checks."}
+      ]
+    },
+    "deploy": {
+      "title": "Deploy, hosting and launch",
+      "keywords": ["deploy", "hosting", "vercel", "cloudflare", "workers", "ci", "cd", "launch", "production", "domain"],
+      "entries": [
+        {"source": "vercel-labs/agent-skills", "skills": ["deploy-to-vercel"], "why": "Official Vercel deploy skill."},
+        {"source": "cloudflare/skills", "skills": ["workers-best-practices", "nextjs-on-cloudflare"], "why": "Official Cloudflare Workers skills."},
+        {"source": "addyosmani/agent-skills", "skills": ["ci-cd-and-automation", "shipping-and-launch"], "why": "CI/CD setup and a pre-launch checklist."}
+      ]
+    },
+    "workflow": {
+      "title": "Engineering workflow (planning, debugging, review)",
+      "keywords": ["debug", "debugging", "plan", "planning", "review", "refactor", "workflow", "architecture", "spec"],
+      "entries": [
+        {"source": "obra/superpowers", "skills": ["systematic-debugging", "brainstorming"], "why": "323k stars, MIT. The original Superpowers (beware clones, see vetting.md)."},
+        {"source": "mattpocock/skills", "skills": ["grill-me", "prototype"], "why": "329k stars, MIT. Plan interrogation before coding."},
+        {"source": "multica-ai/andrej-karpathy-skills", "skills": ["karpathy-guidelines"], "why": "Small, verifiable changes. 235k stars, but no license and last push April 2026."},
+        {"source": "DietrichGebert/ponytail", "skills": ["ponytail-review"], "why": "Behavior-focused code review, 196k stars."}
+      ]
+    }
+  }
+}

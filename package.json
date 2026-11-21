@@ -1,0 +1,25 @@
+{
+  "name": "find-skills",
+  "version": "1.1.0",
+  "description": "Skill finder for Kiro and other Agent Skills tools: finds, vets and installs skills for your project, with anti-slop built in.",
+  "bin": {
+    "find-skills": "bin/cli.js"
+  },
+  "files": [
+    "bin/",
+    "skills/",
+    "steering/",
+    "README.md"
+  ],
+  "keywords": ["agent-skills", "kiro", "skills", "skill-md", "anti-slop", "claude-code"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kennedys0/find-skills.git"
+  },
+  "homepage": "https://github.com/kennedys0/find-skills#readme",
+  "bugs": "https://github.com/kennedys0/find-skills/issues",
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}

@@ -1,0 +1,70 @@
+{
+  "profile": "core",
+  "title": "Shared data: trusted owners, clone detection, anti-slop baseline",
+  "status": "stable",
+  "checked_on": "2026-11-21",
+  "note": "Starting points, not pre-approval. Star counts drift; every entry still goes through `vet` before it is offered to the user.",
+  "trusted_owners": [
+    "anthropics", "vercel-labs", "vercel", "openai", "microsoft", "github", "google-labs-code",
+    "cloudflare", "supabase", "stripe", "trailofbits", "expo", "Unity-Technologies", "firebase",
+    "getsentry", "cursor", "remotion-dev", "neondatabase", "prisma", "clerk", "better-auth", "shadcn-ui"
+  ],
+  "clone_watch": {
+    "superpowers": "obra/superpowers",
+    "ECC": "affaan-m/ECC",
+    "taste-skill": "leonxlnx/taste-skill",
+    "humanizer": "blader/humanizer",
+    "ui-ux-pro-max-skill": "nextlevelbuilder/ui-ux-pro-max-skill",
+    "andrej-karpathy-skills": "multica-ai/andrej-karpathy-skills",
+    "marketingskills": "coreyhaines31/marketingskills",
+    "ponytail": "DietrichGebert/ponytail"
+  },
+  "anti_slop_baseline": {
+    "ui": {
+      "purpose": "Stops generic AI-looking interfaces (purple gradients, glass everywhere, pill-shaped everything, same hero on every site).",
+      "satisfied_by": [["antislop", "antislop-ui"], ["design-taste-frontend"]],
+      "recommend": [
+        {"source": "miqdadbadjuber/anti-slop", "skills": ["antislop", "antislop-ui", "antislop-layoutmobile"],
+         "why": "9.7k stars, MIT, updated daily. Core rules plus UI and mobile layout. Bundled scripts are local-only. Asks once per session whether to apply rules DURING the build or audit AFTER."},
+        {"source": "leonxlnx/taste-skill", "skills": ["design-taste-frontend"],
+         "why": "119k stars, MIT, calls itself 'the anti-slop frontend skill'. Heavy: about 1,600 files / 37 MB, with Node scripts that launch headless Chrome locally, so vet returns REVIEW. Pick it when the user wants a full design kit."}
+      ]
+    },
+    "code": {
+      "purpose": "Removes AI code slop: needless comments, defensive try/catch on trusted paths, `any` casts, deep nesting.",
+      "satisfied_by": [["antislop-code"], ["deslop"]],
+      "recommend": [
+        {"source": "cursor/plugins", "skills": ["deslop"],
+         "why": "Cursor's own team kit, 18k stars. Tiny (under 1 KB), diff-scoped, keeps behavior unchanged."},
+        {"source": "miqdadbadjuber/anti-slop", "skills": ["antislop-code"],
+         "why": "Pairs with the antislop core when it is already installed for UI."}
+      ]
+    },
+    "writing": {
+      "purpose": "Removes AI writing tells from copy, docs, READMEs and landing-page text.",
+      "satisfied_by": [["humanizer"], ["stop-slop"], ["no-ai-slop"], ["antislop-copywriting"]],
+      "recommend": [
+        {"source": "blader/humanizer", "skills": ["humanizer"],
+         "why": "71.9k stars, MIT. Pattern list ranked by strength, keeps meaning intact. Single SKILL.md, no scripts."},
+        {"source": "hardikpandya/stop-slop", "skills": ["stop-slop"],
+         "why": "19k stars, MIT. Short rule set (about 2.6 KB) with phrase and structure references."},
+        {"source": "miqdadbadjuber/anti-slop", "skills": ["antislop-copywriting"],
+         "why": "Use instead when the antislop core is already installed; covers UI microcopy too."}
+      ]
+    }
+  },
+  "domains": {
+    "anti-slop": {
+      "title": "Anti-slop (mandatory baseline, see anti_slop_baseline)",
+      "keywords": ["slop", "generic", "ai-looking", "humanize", "deslop", "taste", "copy", "quality"],
+      "entries": [
+        {"source": "miqdadbadjuber/anti-slop", "skills": ["antislop", "antislop-ui", "antislop-layoutmobile", "antislop-human", "antislop-copywriting", "antislop-code"], "why": "Full anti-slop system for web UI, a11y, copy and code."},
+        {"source": "blader/humanizer", "skills": ["humanizer"], "why": "Prose de-AI-ification, 71.9k stars."},
+        {"source": "hardikpandya/stop-slop", "skills": ["stop-slop"], "why": "Compact prose rules, 19k stars."},
+        {"source": "petergyang/no-ai-slop", "skills": ["no-ai-slop"], "why": "Edit or detect mode for drafts, preserves the writer's voice, 13.7k stars."},
+        {"source": "cursor/plugins", "skills": ["deslop"], "why": "Code slop cleanup on a branch diff."},
+        {"source": "dmmulroy/anti-slop", "skills": ["install-anti-slop"], "why": "Oxlint rules that catch slop in JS/TS mechanically. The skill itself recommends cloudflare/oxlint-config first."}
+      ]
+    }
+  }
+}

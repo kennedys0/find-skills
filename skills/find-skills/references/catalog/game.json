@@ -1,0 +1,44 @@
+{
+  "profile": "game",
+  "title": "Games (Godot, Unity, game design, art and 3D)",
+  "status": "draft",
+  "checked_on": "2026-11-21",
+  "note": "Draft: entries were checked once but the profile is not reviewed end to end. The installer refuses draft profiles; the helper ignores them unless FIND_SKILLS_DRAFTS=1.",
+  "baseline_kinds": ["ui", "code", "writing"],
+  "detect": ["project.godot", "*.unity", "ProjectSettings/ProjectVersion.txt", "*.uproject"],
+  "domains": {
+    "game-godot": {
+      "title": "Game dev: Godot",
+      "keywords": ["godot", "gdscript", "game", "gamedev", "2d", "3d", "platformer", "rpg", "shader"],
+      "entries": [
+        {"source": "gamedev-skills/awesome-gamedev-agent-skills", "skills": ["godot-gdscript", "godot-nodes-scenes", "godot-2d-movement", "godot-physics", "godot-animation", "godot-shaders", "godot-ui-control", "godot-resources"], "why": "Largest gamedev skill set, Godot 4.7, Apache-2.0, 9.9k stars."},
+        {"source": "wshobson/agents", "skills": ["godot-gdscript-patterns"], "why": "Most-installed Godot skill on skills.sh."},
+        {"source": "thedivergentai/Game-Dev-Agentic-Skills", "skills": ["godot-gdscript-mastery", "godot-ability-system"], "why": "Deep genre blueprints. Smaller (983 stars), LGPL-3.0."}
+      ]
+    },
+    "game-unity": {
+      "title": "Game dev: Unity",
+      "keywords": ["unity", "csharp", "game", "gamedev"],
+      "entries": [
+        {"source": "Unity-Technologies/skills", "skills": ["unity-cli", "new-unity-project", "unity-package-management"], "why": "Official Unity skills."},
+        {"source": "gamedev-skills/awesome-gamedev-agent-skills", "skills": ["unity-csharp-scripting", "unity-animation"], "why": "Community Unity set."}
+      ]
+    },
+    "game-design": {
+      "title": "Game design, level design and game UI",
+      "keywords": ["game", "level", "gameplay", "mechanics", "hud", "menu", "balance"],
+      "entries": [
+        {"source": "gamedev-skills/awesome-gamedev-agent-skills", "skills": ["level-design", "game-ui-ux"], "why": "Level design and game UI/UX, engine-agnostic."}
+      ]
+    },
+    "art-3d-character": {
+      "title": "Art, 3D, characters, sprites, animation",
+      "keywords": ["character", "art", "sprite", "pixel", "3d", "blender", "model", "threejs", "asset", "illustration"],
+      "note": "Weakest-quality area. Several popular 'character-design-sheet' results come from clone repos with under 40 stars and huge install counts that push a paid image-generation CLI.",
+      "entries": [
+        {"source": "CloudAI-X/threejs-skills", "skills": ["threejs-fundamentals", "threejs-animation", "threejs-materials"], "why": "Three.js set, 4.3k stars."},
+        {"source": "RobLe3/cc-blender-skill", "skills": ["blender-modeling", "blender-materials", "blender-export"], "why": "Blender via Python, small (180 stars). Vet scripts."}
+      ]
+    }
+  }
+}
