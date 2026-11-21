@@ -4,7 +4,7 @@ description: Find, vet and install agent skills for the current project, focused
 license: MIT
 compatibility: Python 3.9+ and network access to skills.sh, api.github.com, raw.githubusercontent.com and codeload.github.com. A GitHub token (GITHUB_TOKEN or `gh auth login`) avoids the 60 requests/hour anonymous limit.
 metadata:
-  version: "1.1.0"
+  version: "1.2.0"
 ---
 
 # find-skills
@@ -53,6 +53,12 @@ SF local nextjs tailwind     # keyword match against names and descriptions
 ```
 
 If an installed skill covers a domain, use it and do not search for that domain. If a match is weak, read that skill's SKILL.md before deciding it covers the need.
+
+Register every local skill you decide to use, so later sessions keep applying it:
+
+```bash
+SF use antislop antislop-ui vercel-react-best-practices
+```
 
 ### 4. Find candidates for the gaps
 
@@ -119,9 +125,19 @@ SF install owner/repo skill-name --sha <sha> --allow-review     # REVIEW verdict
 - Use `--force` only when the user has read REJECT findings and explicitly insists.
 - Do not use `npx skills add` or a manual `git clone` here. They skip the pinning and the scan.
 
-### 8. Use the new skills now and report
+`install` also adds the skill to `.kiro/steering/find-skills-active.md` (or `~/.kiro/steering/` for `--scope global`). That steering file loads in every session and tells the agent to apply each listed skill. `SF active` shows the list. `SF unuse NAME` takes a skill off the list when the user no longer wants it applied.
 
-Newly installed skills may not be discovered until the next session. Read the installed SKILL.md files now and apply them to the current task. Tell the user which skills were installed and where, and that a new session (or an IDE reload) makes them load automatically.
+### 8. Use every approved skill (required)
+
+Installing a skill and then not using it is a failure of this workflow. The user said yes so the skills would change the work. Once a skill is approved, never ask again whether to use it.
+
+1. **Load them now.** Right after installing, read every installed or registered SKILL.md in full, plus the reference files each one says to read for the current task. Do not wait for the next session; Kiro may not discover new skills until then.
+2. **Run their setup.** If a skill asks the user something first (for example `antislop` asks whether to apply rules DURING the build or audit AFTER), ask it now, in the same message as the install report.
+3. **Map them to the work.** In the install report, give a short plan: each skill, the part of the current task it governs, and when it runs (while writing, before commit, before delivery). Example: "`antislop-ui`: hero and pricing sections, while building. `humanizer`: all landing-page copy, before delivery. `deslop`: the diff, before commit."
+4. **Apply them while working.** Before each piece of work, check which active skills cover it and follow their rules. When two skills overlap, apply both. If they conflict, follow the more specific one and tell the user.
+5. **Check before delivery.** Before saying the work is done, go through every active skill and report one line each: what you did with it (rule applied, audit run, gate passed), or in a few words why it did not apply this time. Never drop one silently.
+
+Finish the install report with which skills were installed and where, and that the active-skills steering keeps them applied in later sessions.
 
 ## Failure handling
 
@@ -134,3 +150,4 @@ Newly installed skills may not be discovered until the next session. Read the in
 - `references/catalog/core.json`: the anti-slop baseline, trusted owners, and famous repo names that clones copy.
 - `references/catalog/<profile>.json`: curated sources per domain for each installed profile. Read it when choosing candidates.
 - `references/vetting.md`: the manual review checklist, red flags, and how to explain findings to the user.
+- `.kiro/steering/find-skills-active.md`: generated list of approved skills for the project. Do not edit it by hand; use `SF use` and `SF unuse`.

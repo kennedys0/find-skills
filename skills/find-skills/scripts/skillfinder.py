@@ -14,7 +14,13 @@ Subcommands:
   search    QUERY                       search skills.sh (+ GitHub) and rank by quality
   list      OWNER/REPO                  list every skill inside a repository
   vet       OWNER/REPO SKILL            download to staging, run the static scan, score it
-  install   OWNER/REPO SKILL            vet again at a pinned commit and copy into a skills dir
+  install   OWNER/REPO SKILL            vet again at a pinned commit, copy into a skills dir, mark active
+  use       NAME...                     mark already-installed skills as active for this project
+  unuse     NAME...                     drop skills from the active list (they stay installed)
+  active                                show the active skills the agent must apply
+
+Active skills are written to .kiro/steering/find-skills-active.md (inclusion: always), so every
+later session is told to read and apply them.
 """
 from __future__ import annotations
 
@@ -881,6 +887,148 @@ def cmd_install(args) -> None:
     print(f"installed {r['skill']} -> {dest}")
     print(f"pinned at {r['sha']} (recorded in {lock_path})")
 
+    if args.dir or args.agent != "kiro":
+        print("note: not added to the Kiro active-skills steering (custom --dir or non-Kiro agent). "
+              "Read the SKILL.md now and apply it.")
+    else:
+        steering = register_active(args.scope, [{
+            "name": r["skill"], "description": r["description"], "path": str(dest / "SKILL.md"),
+            "source": r["source"],
+        }])
+        print(f"active: {r['skill']} added to {steering}")
+    print(f"NEXT: read {dest / 'SKILL.md'} in full now and apply it to the current task.")
+
+
+# --------------------------------------------------------------------------- active skills
+#
+# Every skill the user approved (installed here, or already local and chosen for the project)
+# is listed in a Kiro steering file with `inclusion: always`. That file is loaded in every
+# session, so the agent keeps using the skills instead of installing them and forgetting them.
+
+ACTIVE_JSON = "find-skills-active.json"
+ACTIVE_STEERING = "find-skills-active.md"
+ACTIVE_DESC_CHARS = 220
+
+
+def active_base(scope: str) -> Path:
+    return (Path.home() if scope == "global" else Path.cwd()) / ".kiro"
+
+
+def display_path(p: str) -> str:
+    path = Path(p)
+    for root, prefix in ((Path.cwd(), ""), (Path.home(), "~/")):
+        try:
+            return prefix + str(path.relative_to(root))
+        except ValueError:
+            continue
+    return str(path)
+
+
+def load_active(scope: str) -> dict:
+    f = active_base(scope) / ACTIVE_JSON
+    if not f.exists():
+        return {}
+    try:
+        return json.loads(f.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        die(f"{f} is not valid JSON; fix or delete it, then rerun")
+    return {}
+
+
+def render_steering(scope: str, active: dict) -> str:
+    where = "every project" if scope == "global" else "this project"
+    lines = [
+        "---", "inclusion: always", "---", "",
+        "# Active skills (managed by find-skills)", "",
+        f"The user approved these skills for {where}. They are already installed. Use them; "
+        "do not ask again whether to install or use them.", "",
+        "1. Before working in an area a skill covers, read its SKILL.md in full (path below) unless it is "
+        "already loaded in this session, then follow it, including its own setup questions and checklists.",
+        "2. Apply every skill whose \"Use when\" matches the work, not only the first match.",
+        "3. Before reporting work as done, go through this list. For each skill, either name what you did "
+        "with it (rule applied, audit run, gate passed) or say in a few words why it did not apply. "
+        "Never skip one silently.", "",
+        "| Skill | Use when | SKILL.md |", "|---|---|---|",
+    ]
+    for name in sorted(active):
+        a = active[name]
+        desc = " ".join(a.get("description", "").split())
+        if len(desc) > ACTIVE_DESC_CHARS:
+            desc = desc[:ACTIVE_DESC_CHARS].rsplit(" ", 1)[0] + "…"
+        desc = desc.replace("|", "\\|")
+        lines.append(f"| `{name}` | {desc} | `{a['display_path']}` |")
+    lines.append("")
+    lines.append("Manage this list with `find-skills` (`use`, `unuse`, `active`); manual edits are overwritten.")
+    return "\n".join(lines) + "\n"
+
+
+def write_active(scope: str, active: dict) -> Path:
+    base = active_base(scope)
+    steering = base / "steering" / ACTIVE_STEERING
+    (base / "steering").mkdir(parents=True, exist_ok=True)
+    (base / ACTIVE_JSON).write_text(json.dumps(active, indent=2, ensure_ascii=False) + "\n")
+    if active:
+        steering.write_text(render_steering(scope, active), encoding="utf-8")
+    elif steering.exists():
+        steering.unlink()
+    return steering
+
+
+def register_active(scope: str, skills: list[dict]) -> Path:
+    active = load_active(scope)
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    for s in skills:
+        active[s["name"]] = {
+            "description": s.get("description", ""),
+            "path": s["path"],
+            "display_path": display_path(s["path"]),
+            "source": s.get("source", "local"),
+            "added_at": now,
+        }
+    return write_active(scope, active)
+
+
+def cmd_use(args) -> None:
+    local = {}
+    for s in scan_local(Path.cwd()):  # first hit wins: workspace before global
+        local.setdefault(s["name"], s)
+    missing = [n for n in args.names if n not in local]
+    if missing:
+        die(f"not installed locally: {', '.join(missing)}. Run `local` to see installed skills.")
+    picked = [{"name": n, "description": local[n]["description"],
+               "path": str(Path(local[n]["path"]) / "SKILL.md")} for n in args.names]
+    steering = register_active(args.scope, picked)
+    for p in picked:
+        print(f"active: {p['name']}  ({display_path(p['path'])})")
+    print(f"written: {steering}")
+    print("NEXT: read each SKILL.md above in full now and apply it to the current task.")
+
+
+def cmd_unuse(args) -> None:
+    active = load_active(args.scope)
+    for n in args.names:
+        if active.pop(n, None) is None:
+            print(f"not active: {n}")
+        else:
+            print(f"removed from active list: {n} (the skill stays installed)")
+    print(f"written: {write_active(args.scope, active)}")
+
+
+def cmd_active(args) -> None:
+    shown = False
+    for scope in ("workspace", "global"):
+        active = load_active(scope)
+        if not active:
+            continue
+        shown = True
+        print(f"[{scope}] {active_base(scope) / 'steering' / ACTIVE_STEERING}")
+        for name in sorted(active):
+            a = active[name]
+            ok = "" if Path(a["path"]).exists() else "   (MISSING on disk)"
+            print(f"  - {name:28s} {a['display_path']}{ok}")
+    if not shown:
+        print("No active skills registered.")
+
 
 # --------------------------------------------------------------------------- cli
 
@@ -935,6 +1083,19 @@ def main() -> None:
     s.add_argument("--allow-review", action="store_true")
     s.add_argument("--force", action="store_true")
     s.set_defaults(fn=cmd_install)
+
+    s = sub.add_parser("use", help="mark already-installed skills as active for this project")
+    s.add_argument("names", nargs="+")
+    s.add_argument("--scope", choices=["workspace", "global"], default="workspace")
+    s.set_defaults(fn=cmd_use)
+
+    s = sub.add_parser("unuse", help="remove skills from the active list (keeps them installed)")
+    s.add_argument("names", nargs="+")
+    s.add_argument("--scope", choices=["workspace", "global"], default="workspace")
+    s.set_defaults(fn=cmd_unuse)
+
+    s = sub.add_parser("active", help="show the active skills the agent must apply")
+    s.set_defaults(fn=cmd_active)
 
     args = p.parse_args()
     try:

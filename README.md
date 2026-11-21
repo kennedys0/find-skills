@@ -10,6 +10,18 @@ When you start a project, the agent:
 4. Downloads each candidate to a staging folder, scans every file, and reads the skill itself.
 5. Asks you first, for example: *"May I install these skills for anti-slop?"* It replies in your language.
 6. Installs only what you approve, pinned to the commit it reviewed.
+7. Uses every approved skill. It reads them right away, maps each one to part of the task, applies them while working, and reports per skill before delivery what it did or why the skill did not apply.
+
+## Approved skills stay in use
+
+Approved skills, whether newly installed or already local, are listed in `.kiro/steering/find-skills-active.md`, or `~/.kiro/steering/` for global installs. That steering file uses `inclusion: always`, so every later session is told to read and apply them without asking again.
+
+```bash
+SF="python3 ~/.kiro/skills/find-skills/scripts/skillfinder.py"
+$SF active                      # show the list
+$SF use antislop antislop-ui    # add skills that were already installed
+$SF unuse stop-slop             # stop applying a skill (it stays installed)
+```
 
 ## Install
 
@@ -17,7 +29,7 @@ From GitHub:
 
 ```bash
 npx github:kennedys0/find-skills --website --auto          # global + auto-trigger on new projects (recommended)
-npx github:kennedys0/find-skills#v1.1.0 --website          # pin a specific version
+npx github:kennedys0/find-skills#v1.2.0 --website          # pin a specific version
 npm install -g github:kennedys0/find-skills && find-skills --website
 ```
 
