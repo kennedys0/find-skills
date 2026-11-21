@@ -4,7 +4,7 @@ description: Find, vet and install agent skills for the current project, focused
 license: MIT
 compatibility: Python 3.9+ and network access to skills.sh, api.github.com, raw.githubusercontent.com and codeload.github.com. A GitHub token (GITHUB_TOKEN or `gh auth login`) avoids the 60 requests/hour anonymous limit.
 metadata:
-  version: "1.4.0"
+  version: "1.4.1"
 ---
 
 # find-skills

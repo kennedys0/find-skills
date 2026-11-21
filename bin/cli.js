@@ -172,12 +172,14 @@ function parseArgs(argv) {
   const commands = { install: "install", add: "install", uninstall: "uninstall", remove: "uninstall",
                      list: "list", agents: "agents", update: "update", upgrade: "update",
                      version: "version", status: "version", help: "help" };
+  // Accept single-dash long options too: -detect, -website, -agent=codex mean --detect, --website, --agent=codex.
+  argv = argv.map((a) => (/^-[a-z][a-z0-9-]+(=.*)?$/i.test(a) ? "-" + a : a));
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     const next = () => (argv[i + 1] && !argv[i + 1].startsWith("-") ? argv[++i] : null);
     if (a === "-h" || a === "--help") opts.cmd = "help";
-    else if (a === "-v" || a === "--version" || a === "-version") opts.cmd = "version";
-    else if (a === "--update" || a === "-update") opts.cmd = "update";
+    else if (a === "-v" || a === "--version") opts.cmd = "version";
+    else if (a === "--update") opts.cmd = "update";
     else if (a === "--list") opts.cmd = "list";
     else if (commands[a]) opts.cmd = commands[a];
     else if (a === "--all") opts.all = true;
