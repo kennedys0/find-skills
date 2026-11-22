@@ -18,7 +18,9 @@
         {"source": "google-labs-code/stitch-skills", "skills": ["taste-design"], "why": "Google Labs Stitch design skills."},
         {"source": "nutlope/hallmark", "skills": ["hallmark"], "why": "Design skill by Nutlope, 59k stars, MIT: a hard floor against AI-generated UI defaults plus a dealt direction per build. Vet REVIEW explained: helper scripts use execSync/spawnSync for local tooling only (localhost screenshots, lint), and Together AI image generation is opt-in with a placeholder fallback."},
         {"source": "wondelai/skills", "skills": ["microinteractions"], "why": "Microinteraction framework (trigger, rules, feedback, loops and modes) after Dan Saffer, 2.8k stars, MIT, clean scan."},
-        {"source": "better-auth/better-icons", "skills": ["better-icons"], "why": "Official better-auth CLI to search 200+ Iconify icon libraries and fetch SVGs, 1.5k stars, MIT, trusted owner."}
+        {"source": "better-auth/better-icons", "skills": ["better-icons"], "why": "Official better-auth CLI to search 200+ Iconify icon libraries and fetch SVGs, 1.5k stars, MIT, trusted owner."},
+        {"source": "owl-listener/designer-skills", "skills": ["color-system", "critique-color"], "why": "From a 3.4k-star MIT design collection: color-system builds tonal scales, semantic roles and WCAG contrast; critique-color audits a rendered screen's colour. Both PASS with a clean scan."},
+        {"source": "jezweb/claude-skills", "skills": ["color-palette"], "why": "One brand hex to an 11-shade scale, semantic tokens, dark mode and Tailwind v4 output with WCAG contrast checks, 1.1k stars, MIT, clean scan."}
       ]
     },
     "frontend": {
