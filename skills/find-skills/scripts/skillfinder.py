@@ -657,8 +657,10 @@ RULES = [
      r"|abaikan (semua |segala )?(instruksi|aturan|petunjuk) (sebelumnya|di atas|yang lalu)"
      r"|jangan (beri ?tahu|bilang|katakan) (kepada )?(user|pengguna|orang)"
      r"|sembunyikan (ini|hal ini) (dari )?(user|pengguna)"),
-    ("HIGH", "destructive", "all",
+    ("HIGH", "destructive", "script",
      r"rm\s+-[a-z]*r[a-z]*f?[a-z]*\s+(/|~|\$home|\*)(\s|$)|\bmkfs\b|\bdd\s+if=[^\n]*of=/dev/|:\(\)\s*\{\s*:\|:&\s*\};:"),
+    ("LOW", "destructive-doc", "doc",
+     r"rm\s+-[a-z]*r[a-z]*f?[a-z]*\s+(/|~|\$home|\*)(\s|$)|\bmkfs\b|\bdd\s+if=[^\n]*of=/dev/"),
     ("HIGH", "obfuscated-exec", "all",
      r"(base64\s+(-d|--decode)|b64decode|atob\(|frombase64string)[^\n]{0,200}(\|\s*(ba)?sh|exec|eval|invoke)"
      r"|(eval|exec)\s*\(\s*(base64|atob|bytes\.fromhex|codecs\.decode|zlib\.decompress)"),
@@ -667,7 +669,7 @@ RULES = [
      r"|\.(downloadstring|downloadfile|downloaddata)\s*\("
      r"|\biex\s*\(|\binvoke-expression\b"),
     ("HIGH", "secret-exfil", "all",
-     r"(curl|wget|fetch\(|requests\.(post|put)|axios\.(post|put)|http\.request)[^\n]{0,250}"
+     r"(curl|wget|requests\.(post|put)|axios\.(post|put)|http\.request)[^\n]{0,250}"
      r"(\$\(?(env|printenv)|process\.env|os\.environ|github_token|aws_secret|api_key|\.env\b)"),
     ("MEDIUM", "sudo", "all", r"\bsudo\s+\S"),
     ("MEDIUM", "network-in-script", "script",
@@ -691,8 +693,19 @@ COMPILED = [(sev, rid, scope, re.compile(rx, re.IGNORECASE)) for sev, rid, scope
 # (backslash continuations, wrapped markdown) so a per-line scan misses them.
 MULTILINE_RULES = {"pipe-to-shell", "obfuscated-exec", "secret-exfil", "destructive"}
 HIDDEN_HIGH = re.compile("[\u202a-\u202e\u2066-\u2069\U000E0000-\U000E007F]")  # bidi + tag chars
-HIDDEN_MED = re.compile("[\u200b-\u200f\u2060\ufeff]")  # zero-width
+# zero-width chars that have no legitimate use; U+200D is excluded because it is the joiner
+# inside everyday emoji sequences (family emojis, flags, skin tones).
+HIDDEN_MED = re.compile("[\u200b\u200c\u200e\u200f\u2060\ufeff]")
 SEVERITY_ORDER = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
+
+
+def _is_quoted_example(line: str, m: re.Match) -> bool:
+    """True when a prompt-injection match sits inside quoted text, e.g. a defensive skill
+    quoting '(e.g., "Ignore previous instructions...")'. Quoting is how docs and warnings
+    cite attack phrases; a real injection is written as a plain instruction."""
+    start, end = m.span()
+    before, after = line[max(0, start - 120):start], line[end:end + 120]
+    return bool(re.search(r"[\"'`]", before)) and bool(re.search(r"[\"'`]", after))
 
 
 def scan_files(root: Path, files: list[str]) -> list[dict]:
@@ -726,14 +739,17 @@ def scan_files(root: Path, files: list[str]) -> list[dict]:
             elif HIDDEN_MED.search(line):
                 add("MEDIUM", "zero-width-chars", rel, i, repr(line)[:180])
             for sev, rid, rscope, rx in COMPILED:
-                if rscope in ("all", scope) and rx.search(line):
+                if rscope in ("all", scope) and (m := rx.search(line)):
+                    if rid == "prompt-injection" and _is_quoted_example(line, m):
+                        add("MEDIUM", "prompt-injection-example", rel, i, line)
+                        continue
                     fired.add(rid)
                     add(sev, rid, rel, i, line)
         # Multi-line pass: join the lines and re-test the evasion-prone rules that did not
         # already fire on a single line of this file.
         joined = " ".join(text.splitlines())
         for sev, rid, rscope, rx in COMPILED:
-            if rid in MULTILINE_RULES and rid not in fired:
+            if rid in MULTILINE_RULES and rid not in fired and rscope in ("all", scope):
                 m = rx.search(joined)
                 if m:
                     add(sev, rid, rel, 0, f"[spans lines] {m.group(0)[:160]}")
