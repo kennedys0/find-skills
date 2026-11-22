@@ -15,7 +15,10 @@
         {"source": "nextlevelbuilder/ui-ux-pro-max-skill", "skills": ["ui-ux-pro-max"], "why": "Design-system generator with style/palette/font database, 152k stars."},
         {"source": "pbakaus/impeccable", "skills": ["impeccable"], "why": "Design, critique, audit and polish commands for frontends, 114k stars."},
         {"source": "emilkowalski/skills", "skills": ["review-animations"], "why": "Motion and animation review by the Sonner/Vaul author, 58k stars."},
-        {"source": "google-labs-code/stitch-skills", "skills": ["taste-design"], "why": "Google Labs Stitch design skills."}
+        {"source": "google-labs-code/stitch-skills", "skills": ["taste-design"], "why": "Google Labs Stitch design skills."},
+        {"source": "nutlope/hallmark", "skills": ["hallmark"], "why": "Design skill by Nutlope, 59k stars, MIT: a hard floor against AI-generated UI defaults plus a dealt direction per build. Vet REVIEW explained: helper scripts use execSync/spawnSync for local tooling only (localhost screenshots, lint), and Together AI image generation is opt-in with a placeholder fallback."},
+        {"source": "wondelai/skills", "skills": ["microinteractions"], "why": "Microinteraction framework (trigger, rules, feedback, loops and modes) after Dan Saffer, 2.8k stars, MIT, clean scan."},
+        {"source": "better-auth/better-icons", "skills": ["better-icons"], "why": "Official better-auth CLI to search 200+ Iconify icon libraries and fetch SVGs, 1.5k stars, MIT, trusted owner."}
       ]
     },
     "frontend": {
