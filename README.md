@@ -37,7 +37,7 @@ Topics outside the installed profiles are still searched on skills.sh and GitHub
 
 - **Quality score (0–100):** stars, installs, last push, license, and trusted owners such as official vendors. Forks, archived repos and clone patterns lose points.
 - **Clone detection:** many clone repos have a few dozen stars but tens of thousands of reported installs (for example `101-skills/superpowers`: 31 stars, 67k installs). These are rejected automatically.
-- **Static scan:** `curl | sh`, reads of `~/.ssh` and other credentials, tokens sent over the network, prompt injection, hidden Unicode, bundled binaries, `rm -rf /`, dynamic exec, and network calls in scripts.
+- **Static scan:** `curl | sh`, PowerShell download cradles, reads of `~/.ssh`, `.npmrc` and other credentials, tokens sent over the network, prompt injection (English and Indonesian), hidden Unicode, multi-line command splitting, bundled binaries, `rm -rf /`, dynamic exec, and network calls in scripts.
 - **Verdicts:** `PASS`; `REVIEW` (the agent explains the flags and you decide); `REJECT` (never installed unless you insist).
 
 The scan matches patterns, so the agent must still read the SKILL.md and every script itself.
@@ -170,6 +170,9 @@ skills/find-skills/
     └── vetting.md                 manual review checklist
 steering/find-skills-auto.md       optional always-on trigger
 .github/workflows/release.yml      automatic releases
+.github/workflows/ci.yml           checks and tests on every pull request
+.github/workflows/catalog-revet.yml weekly re-vet of every catalog entry; opens an issue on regressions
+.github/scripts/revet_catalog.py   the re-vet script the workflow runs
 tests/                              unit tests (Python unittest + node:test), run by CI on every pull request
 ```
 

@@ -36,6 +36,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -207,7 +208,12 @@ def gh_api(path: str):
 
 def raw_file(full: str, sha: str, path: str) -> bytes:
     url = f"https://raw.githubusercontent.com/{full}/{sha}/{urllib.parse.quote(path)}"
-    return http_get(url, raw=True)
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    with urllib.request.urlopen(req, timeout=25) as resp:
+        data = resp.read(MAX_FILE_BYTES + 1)
+    if len(data) > MAX_FILE_BYTES:
+        raise RuntimeError(f"{path} exceeds {MAX_FILE_BYTES // 1_000_000} MB; fetch aborted")
+    return data
 
 
 class _CappedReader:
@@ -640,18 +646,26 @@ RULES = [
     ("HIGH", "pipe-to-shell", "all",
      r"(curl|wget|iwr|invoke-webrequest)\b[^\n|]{0,300}\|\s*(sudo\s+)?(ba|z|da|k)?sh\b|\|\s*iex\b|invoke-expression"),
     ("HIGH", "secret-paths", "all",
-     r"\.ssh/|id_rsa|id_ed25519|\.aws/credentials|\.netrc\b|\.pypirc|\.docker/config\.json"
+     r"\.ssh/|id_rsa|id_ed25519|\.aws/credentials|\.netrc\b|\.pypirc|\.npmrc|_authtoken|\.git-credentials"
+     r"|\.docker/config\.json"
      r"|\.config/gh/hosts|login data|keychain-db|wallet\.dat|\.gnupg"),
     ("HIGH", "prompt-injection", "all",
      r"ignore (all |any )?(of )?(the )?(previous|prior|above|earlier) (instructions|rules|messages)"
      r"|disregard (the |all |any )?(system|previous|prior)|do not (tell|inform|mention (this )?to) the user"
      r"|without (asking|telling|informing|notifying) the user|hide (this|it|these) from the user"
-     r"|you are now (in )?(developer|dan|jailbreak|unrestricted)|override (the )?system prompt"),
+     r"|you are now (in )?(developer|dan|jailbreak|unrestricted)|override (the )?system prompt"
+     r"|abaikan (semua |segala )?(instruksi|aturan|petunjuk) (sebelumnya|di atas|yang lalu)"
+     r"|jangan (beri ?tahu|bilang|katakan) (kepada )?(user|pengguna|orang)"
+     r"|sembunyikan (ini|hal ini) (dari )?(user|pengguna)"),
     ("HIGH", "destructive", "all",
      r"rm\s+-[a-z]*r[a-z]*f?[a-z]*\s+(/|~|\$home|\*)(\s|$)|\bmkfs\b|\bdd\s+if=[^\n]*of=/dev/|:\(\)\s*\{\s*:\|:&\s*\};:"),
     ("HIGH", "obfuscated-exec", "all",
      r"(base64\s+(-d|--decode)|b64decode|atob\(|frombase64string)[^\n]{0,200}(\|\s*(ba)?sh|exec|eval|invoke)"
      r"|(eval|exec)\s*\(\s*(base64|atob|bytes\.fromhex|codecs\.decode|zlib\.decompress)"),
+    ("HIGH", "powershell-cradle", "script",
+     r"set-executionpolicy\s+(-\w+\s+)*(bypass|unrestricted)"
+     r"|\.(downloadstring|downloadfile|downloaddata)\s*\("
+     r"|\biex\s*\(|\binvoke-expression\b"),
     ("HIGH", "secret-exfil", "all",
      r"(curl|wget|fetch\(|requests\.(post|put)|axios\.(post|put)|http\.request)[^\n]{0,250}"
      r"(\$\(?(env|printenv)|process\.env|os\.environ|github_token|aws_secret|api_key|\.env\b)"),
@@ -673,6 +687,9 @@ RULES = [
      r"|paid plan|credits)\b|^\s*[a-z0-9-]+ (auth )?login\s*$"),
 ]
 COMPILED = [(sev, rid, scope, re.compile(rx, re.IGNORECASE)) for sev, rid, scope, rx in RULES]
+# Rules worth re-testing with the lines joined: these evasions split the command across lines
+# (backslash continuations, wrapped markdown) so a per-line scan misses them.
+MULTILINE_RULES = {"pipe-to-shell", "obfuscated-exec", "secret-exfil", "destructive"}
 HIDDEN_HIGH = re.compile("[\u202a-\u202e\u2066-\u2069\U000E0000-\U000E007F]")  # bidi + tag chars
 HIDDEN_MED = re.compile("[\u200b-\u200f\u2060\ufeff]")  # zero-width
 SEVERITY_ORDER = {"HIGH": 0, "MEDIUM": 1, "LOW": 2}
@@ -702,6 +719,7 @@ def scan_files(root: Path, files: list[str]) -> list[dict]:
         text = data.decode("utf-8", "replace")
         is_script = ext in SCRIPT_EXT or text.startswith("#!")
         scope = "script" if is_script else "doc"
+        fired: set[str] = set()
         for i, line in enumerate(text.splitlines(), 1):
             if HIDDEN_HIGH.search(line):
                 add("HIGH", "hidden-unicode", rel, i, repr(line)[:180])
@@ -709,7 +727,16 @@ def scan_files(root: Path, files: list[str]) -> list[dict]:
                 add("MEDIUM", "zero-width-chars", rel, i, repr(line)[:180])
             for sev, rid, rscope, rx in COMPILED:
                 if rscope in ("all", scope) and rx.search(line):
+                    fired.add(rid)
                     add(sev, rid, rel, i, line)
+        # Multi-line pass: join the lines and re-test the evasion-prone rules that did not
+        # already fire on a single line of this file.
+        joined = " ".join(text.splitlines())
+        for sev, rid, rscope, rx in COMPILED:
+            if rid in MULTILINE_RULES and rid not in fired:
+                m = rx.search(joined)
+                if m:
+                    add(sev, rid, rel, 0, f"[spans lines] {m.group(0)[:160]}")
     for (rid, rel), n in per_rule.items():
         if n > 3:
             findings.append({"severity": "LOW", "rule": rid, "file": rel, "line": 0,
@@ -742,6 +769,21 @@ def check_frontmatter(fm: dict, md_text: str, folder: str) -> list[dict]:
 
 # --------------------------------------------------------------------------- vet / install
 
+def sweep_staging() -> None:
+    """Keep the staging root private (0700) and drop folders left by runs older than a day."""
+    try:
+        STAGING_ROOT.mkdir(mode=0o700, parents=True, exist_ok=True)
+    except OSError:
+        return
+    now = time.time()
+    for p in STAGING_ROOT.iterdir():
+        try:
+            if p.is_dir() and not p.is_symlink() and now - p.stat().st_mtime > 86_400:
+                shutil.rmtree(p, ignore_errors=True)
+        except OSError:
+            continue
+
+
 def stage_skill(full: str, skill: str, ref: str | None) -> dict:
     if not REPO_RE.match(full):
         raise RuntimeError(f"'{full}' is not an OWNER/REPO GitHub source")
@@ -768,9 +810,10 @@ def stage_skill(full: str, skill: str, ref: str | None) -> dict:
     name = name or (folder.rsplit("/", 1)[-1] if folder else full.split("/")[1]).lower()
 
     owner, repo = full.split("/")
-    stage = STAGING_ROOT / f"{owner}__{repo}__{name}__{sha[:12]}"
-    if stage.exists():
-        shutil.rmtree(stage)
+    sweep_staging()
+    # mkdtemp creates the folder with mode 0700 under our private staging root, so another
+    # local user cannot pre-create or swap it.
+    stage = Path(tempfile.mkdtemp(prefix=f"{owner}__{repo}__{name}__{sha[:12]}__", dir=STAGING_ROOT))
     skill_root = stage / "skill"
     skill_root.mkdir(parents=True)
 
@@ -941,6 +984,7 @@ def cmd_install(args) -> None:
         print(f"backed up existing skill to {backup}")
 
     shutil.copytree(r["staged_dir"], dest)
+    shutil.rmtree(Path(r["staged_dir"]).parent, ignore_errors=True)  # vetted copy is installed; drop staging
     lock[r["skill"]] = {
         "source": r["source"], "path": r["skill_path"], "sha": r["sha"], "url": r["url"],
         "verdict": r["verdict"], "quality": r["quality"],

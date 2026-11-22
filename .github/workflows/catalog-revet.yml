@@ -1,0 +1,44 @@
+# Curated catalog entries can rot: a repo gets archived, renamed, cloned, or its skill
+# starts failing the scan. This re-vets every entry weekly and opens an issue when the
+# catalog regressed. Runs `vet` against each repo's current default branch.
+name: Catalog re-vet
+
+on:
+  schedule:
+    - cron: "23 5 * * 1" # Mondays 05:23 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: catalog-revet
+  cancel-in-progress: false
+
+jobs:
+  revet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Re-vet every catalog entry
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -o pipefail
+          python3 .github/scripts/revet_catalog.py | tee "$GITHUB_STEP_SUMMARY"
+
+      - name: Open or update an issue
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          body=$(cat revet-report.md)
+          existing=$(gh issue list --search "Catalog re-vet found problems in:title" \
+                     --state open --json number --jq '.[0].number')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "Catalog re-vet found problems" --body "$body"
+          fi
