@@ -670,7 +670,7 @@ RULES = [
      r"|\biex\s*\(|\binvoke-expression\b"),
     ("HIGH", "secret-exfil", "all",
      r"(curl|wget|requests\.(post|put)|axios\.(post|put)|http\.request)[^\n]{0,250}"
-     r"(\$\(?(env|printenv)|process\.env|os\.environ|github_token|aws_secret|api_key|\.env\b)"),
+     r"(\$?\(?(env|printenv)\)?|process\.env|os\.environ|github_token|aws_secret|api_key|\.env\b)"),
     ("MEDIUM", "sudo", "all", r"\bsudo\s+\S"),
     ("MEDIUM", "network-in-script", "script",
      r"urllib\.request|\brequests\.(get|post|put|delete|request)|http\.client|\bsocket\.socket|\baxios\b"
