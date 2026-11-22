@@ -161,7 +161,7 @@ The helper uses only the Python standard library and the installer has no npm de
 bin/cli.js                         npx installer
 skills/find-skills/
 ├── SKILL.md                       workflow the agent follows
-├── scripts/skillfinder.py         helper: local, baseline, catalog, search, list, vet, install, use, unuse, active
+├── scripts/skillfinder.py         helper: local, baseline, catalog, search, list, vet, install, verify, use, unuse, active
 └── references/
     ├── catalog/core.json          anti-slop baseline, trusted owners, clone detection
     ├── catalog/website.json       website profile
@@ -170,6 +170,7 @@ skills/find-skills/
     └── vetting.md                 manual review checklist
 steering/find-skills-auto.md       optional always-on trigger
 .github/workflows/release.yml      automatic releases
+tests/                              unit tests (Python unittest + node:test), run by CI on every pull request
 ```
 
 ### Adding a catalog entry
@@ -211,7 +212,9 @@ Run the same checks as the release workflow:
 
 ```bash
 python3 -m py_compile skills/find-skills/scripts/skillfinder.py
+python3 -m unittest discover -s tests
 node --check bin/cli.js
+node --test tests/
 for f in skills/find-skills/references/*.json skills/find-skills/references/catalog/*.json; do python3 -m json.tool "$f" >/dev/null || echo "bad: $f"; done
 node bin/cli.js list
 ```

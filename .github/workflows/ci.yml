@@ -1,0 +1,41 @@
+# Runs the same checks as the release workflow, plus the test suite, on every PR and push to main.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Python checks and tests
+        run: |
+          python3 -m py_compile skills/find-skills/scripts/skillfinder.py
+          python3 -m unittest discover -s tests -v
+
+      - name: JSON catalogs are valid
+        run: |
+          for f in skills/find-skills/references/*.json skills/find-skills/references/catalog/*.json; do
+            python3 -m json.tool "$f" >/dev/null || { echo "::error file=$f::invalid JSON"; exit 1; }
+          done
+
+      - name: Node checks and tests
+        run: |
+          node --check bin/cli.js
+          node --test tests/
+          node bin/cli.js list
+          node bin/cli.js agents
+
+      - name: Package is intact
+        run: npm pack --dry-run

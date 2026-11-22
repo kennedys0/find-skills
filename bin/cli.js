@@ -506,4 +506,9 @@ async function main() {
   }
 }
 
-main().catch((err) => fail(err && err.message ? err.message : String(err)));
+if (require.main === module) {
+  main().catch((err) => fail(err && err.message ? err.message : String(err)));
+}
+
+// Exported for the test suite (tests/cli.test.js); requiring this file has no side effects.
+module.exports = { parseArgs, compareVersions, resolveProfiles, targets };

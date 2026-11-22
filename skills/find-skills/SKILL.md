@@ -111,7 +111,7 @@ Wait for an explicit yes. Silence, "nanti" or "maybe" is not a yes. The user may
 
 ### 7. Install what was approved
 
-Use the `sha` printed by `vet` so the installed files are exactly the ones you reviewed:
+`install` requires the `--sha` printed by `vet`, so the installed files are exactly the ones you reviewed:
 
 ```bash
 SF install owner/repo skill-name --sha <sha>                    # .kiro/skills/ in this project
@@ -121,7 +121,7 @@ SF install owner/repo skill-name --sha <sha> --allow-review     # REVIEW verdict
 
 - Pass `--agent <id>` for the agent you are running in, so the skill lands where that agent looks: `kiro` (default), `claude`, `codex`, `antigravity`, `gemini`, `opencode`, `pi`, `cursor`, `copilot`, `windsurf` and more. `SF agents` lists every id with its project and global folders. If you cannot tell which agent you are, ask the user.
 - An existing skill with the same name is never replaced silently. `--overwrite` moves the old copy to `skills-backup/` first, and needs the user's OK.
-- Every install is recorded with its commit in `.find-skills-lock.json` inside the skills folder.
+- Every install is recorded with its commit and a sha256 of every installed file in `.find-skills-lock.json` inside the skills folder. `SF verify` re-checks those hashes; run it if you suspect a skill was edited, corrupted or partially deleted after install, and reinstall through vet + install if the change is wanted.
 - Use `--force` only when the user has read REJECT findings and explicitly insists.
 - Do not use `npx skills add` or a manual `git clone` here. They skip the pinning and the scan.
 

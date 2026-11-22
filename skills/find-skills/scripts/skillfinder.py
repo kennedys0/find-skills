@@ -14,7 +14,8 @@ Subcommands:
   search    QUERY                       search skills.sh (+ GitHub) and rank by quality
   list      OWNER/REPO                  list every skill inside a repository
   vet       OWNER/REPO SKILL            download to staging, run the static scan, score it
-  install   OWNER/REPO SKILL            vet again at a pinned commit, copy into a skills dir, mark active
+  install   OWNER/REPO SKILL --SHA      vet at that pinned commit, copy into a skills dir, mark active
+  verify    [--scope|--agent|--dir]     re-check installed skills against their install-time hashes
   use       NAME...                     mark already-installed skills as active for this project
   unuse     NAME...                     drop skills from the active list (they stay installed)
   active                                show the active skills the agent must apply
@@ -25,6 +26,7 @@ later session is told to read and apply them.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import math
 import os
@@ -809,6 +811,15 @@ def stage_skill(full: str, skill: str, ref: str | None) -> dict:
             "files": kept, "skipped": skipped, "bytes": total}
 
 
+def hash_files(root: Path) -> dict[str, str]:
+    """sha256 of every file under root, keyed by relative posix path."""
+    out = {}
+    for p in sorted(root.rglob("*")):
+        if p.is_file():
+            out[p.relative_to(root).as_posix()] = hashlib.sha256(p.read_bytes()).hexdigest()
+    return out
+
+
 def vet(full: str, skill: str, ref: str | None, installs: int | None = None) -> dict:
     cat = load_catalog()
     trusted = {o.lower() for o in cat.get("trusted_owners", [])}
@@ -897,6 +908,9 @@ def target_dir(args) -> Path:
 
 def cmd_install(args) -> None:
     args.agent = agent_id(args.agent)
+    if not args.sha:
+        die("install needs --sha <commit> from the vet step, so the installed files are exactly "
+            "the ones that were reviewed. Run `vet` first and pass the sha it printed.", 2)
     r = vet(args.source, args.skill, args.sha)
     print_report(r)
     print()
@@ -931,6 +945,7 @@ def cmd_install(args) -> None:
         "source": r["source"], "path": r["skill_path"], "sha": r["sha"], "url": r["url"],
         "verdict": r["verdict"], "quality": r["quality"],
         "installed_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "files": hash_files(dest),
     }
     lock_path.write_text(json.dumps(lock, indent=2, ensure_ascii=False) + "\n")
     print(f"installed {r['skill']} -> {dest}")
@@ -946,6 +961,53 @@ def cmd_install(args) -> None:
         }])
         print(f"active: {r['skill']} added to {steering}")
     print(f"NEXT: read {dest / 'SKILL.md'} in full now and apply it to the current task.")
+
+
+# --------------------------------------------------------------------------- verify
+#
+# Every install records a sha256 per file in the lock file. `verify` re-checks those hashes so
+# a skill that was edited, corrupted or partially deleted after install is noticed instead of
+# silently drifting from what the user approved.
+
+def cmd_verify(args) -> None:
+    root = target_dir(args)
+    lock_path = root / LOCK_NAME
+    if not lock_path.exists():
+        print(f"no lock file at {lock_path}; nothing recorded to verify")
+        return
+    try:
+        lock = json.loads(lock_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        die(f"{lock_path} is not valid JSON ({exc})")
+    bad = 0
+    for name in sorted(lock):
+        hashes = lock[name].get("files") or {}
+        skill_dir = root / name
+        if not hashes:
+            print(f"[no-hashes] {name}: installed by an older version; reinstall to record hashes")
+            bad += 1
+            continue
+        if not skill_dir.is_dir():
+            print(f"[MISSING]   {name}: folder not found at {skill_dir}")
+            bad += 1
+            continue
+        current = hash_files(skill_dir)
+        changed = sorted(f for f, h in hashes.items() if current.get(f) != h)
+        added = sorted(f for f in current if f not in hashes)
+        if changed:
+            listing = ", ".join(changed[:5]) + (f", +{len(changed) - 5} more" if len(changed) > 5 else "")
+            print(f"[CHANGED]   {name}: {listing}")
+            bad += 1
+        if added:
+            listing = ", ".join(added[:5]) + (f", +{len(added) - 5} more" if len(added) > 5 else "")
+            print(f"[ADDED]     {name}: {listing}")
+            bad += 1
+        if not changed and not added:
+            print(f"[ok]        {name}: {len(hashes)} file(s) match the install-time hashes")
+    if bad:
+        die(f"{bad} skill(s) no longer match what was installed. Read the differences; if the change "
+            "is wanted, re-run vet + install so the new content is reviewed and re-pinned.", 2)
+    print("all installed skills match their install-time hashes.")
 
 
 # --------------------------------------------------------------------------- active skills
@@ -1132,6 +1194,12 @@ def main() -> None:
     s.add_argument("--allow-review", action="store_true")
     s.add_argument("--force", action="store_true")
     s.set_defaults(fn=cmd_install)
+
+    s = sub.add_parser("verify", help="check installed skills still match their install-time hashes")
+    s.add_argument("--scope", choices=["workspace", "global"], default="workspace")
+    s.add_argument("--agent", default="kiro", help="agent whose skills folder to check (see `agents`)" )
+    s.add_argument("--dir", help="explicit skills directory (overrides --scope/--agent)")
+    s.set_defaults(fn=cmd_verify)
 
     s = sub.add_parser("use", help="mark already-installed skills as active for this project")
     s.add_argument("names", nargs="+")
