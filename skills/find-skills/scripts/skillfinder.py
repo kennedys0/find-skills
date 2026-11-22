@@ -690,8 +690,10 @@ RULES = [
 ]
 COMPILED = [(sev, rid, scope, re.compile(rx, re.IGNORECASE)) for sev, rid, scope, rx in RULES]
 # Rules worth re-testing with the lines joined: these evasions split the command across lines
-# (backslash continuations, wrapped markdown) so a per-line scan misses them.
-MULTILINE_RULES = {"pipe-to-shell", "obfuscated-exec", "secret-exfil", "destructive"}
+# (backslash continuations, wrapped markdown) so a per-line scan misses them. secret-exfil is
+# deliberately absent: its proximity window is only meaningful within one line, and joining
+# lines makes unrelated curl/wget examples look like exfiltration.
+MULTILINE_RULES = {"pipe-to-shell", "obfuscated-exec", "destructive"}
 HIDDEN_HIGH = re.compile("[\u202a-\u202e\u2066-\u2069\U000E0000-\U000E007F]")  # bidi + tag chars
 # zero-width chars that have no legitimate use; U+200D is excluded because it is the joiner
 # inside everyday emoji sequences (family emojis, flags, skin tones).
