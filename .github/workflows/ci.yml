@@ -33,7 +33,7 @@ jobs:
       - name: Node checks and tests
         run: |
           node --check bin/cli.js
-          node --test tests/
+          node --test
           node bin/cli.js list
           node bin/cli.js agents
 

@@ -217,7 +217,7 @@ Run the same checks as the release workflow:
 python3 -m py_compile skills/find-skills/scripts/skillfinder.py
 python3 -m unittest discover -s tests
 node --check bin/cli.js
-node --test tests/
+node --test
 for f in skills/find-skills/references/*.json skills/find-skills/references/catalog/*.json; do python3 -m json.tool "$f" >/dev/null || echo "bad: $f"; done
 node bin/cli.js list
 ```
